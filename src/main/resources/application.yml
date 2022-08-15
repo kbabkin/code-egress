@@ -1,0 +1,43 @@
+folder: "."
+
+file:
+  guard:
+    values:
+    patterns:
+      - ".*"
+  ignore:
+    values:
+      - "target"
+      - ".git"
+      - ".idea"
+    patterns:
+      - ".*\\.unzip"
+      - ".*\\.class"
+
+word:
+  guard:
+    values:
+      - "ibm"
+      - "match"
+      - "RuntimeException"
+    patterns:
+    valueFiles: ${replace.valueFiles}
+    patternFiles:
+
+  ignore:
+    values:
+      - "localhost"
+      - "127.0.0.1"
+
+replace:
+  values:
+    "ibm": "vvv1"
+  valueFiles:
+
+write:
+
+status:
+
+overrides:
+
+rules:
