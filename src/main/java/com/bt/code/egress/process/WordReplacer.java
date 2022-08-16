@@ -6,7 +6,6 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -21,7 +20,7 @@ public class WordReplacer {
     private final Map<String, String> predefinedMap;
     private final Map<String, String> generatedMap = new HashMap<>();
 
-    int num = 1; //todo init
+//    int num = 1; //todo init
 
     public static WordReplacer fromConfig(Config.MapGroup mapGroup) {
         return new WordReplacer(load(mapGroup.getValues(), mapGroup.getValueFiles()));
@@ -64,7 +63,8 @@ public class WordReplacer {
     // todo hashcode?
     // todo: by pattern
     private String generate(String word) {
-        String value = "w" + num++;
+//        String value = "w" + num++;
+        String value = "w" + Math.abs(word.hashCode());
         generatedMap.put(word, value);
         return value;
     }

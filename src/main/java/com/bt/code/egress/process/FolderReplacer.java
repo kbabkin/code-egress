@@ -1,14 +1,17 @@
 package com.bt.code.egress.process;
 
 import com.bt.code.egress.read.GroupMatcher;
+import com.bt.code.egress.write.ReplacementWriter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.stream.Stream;
 import java.util.zip.ZipFile;
 
 @RequiredArgsConstructor
@@ -16,49 +19,59 @@ import java.util.zip.ZipFile;
 public class FolderReplacer {
     private final FileReplacer fileReplacer;
     private final GroupMatcher fileMatcher;
+    private final ReplacementWriter replacementWriter;
 
-    public void replace(File folder) {
-        if (!folder.isDirectory()) {
-            throw new RuntimeException("Not a folder: " + folder);
-        }
-        File[] files = folder.listFiles();
-        if (files == null) {
-            throw new RuntimeException("No files at: " + folder);
-        }
-        for (File file : files) {
-            // todo: relativize
-            String name = file.getName();
-            String matchReason = fileMatcher.getMatchReason(name);
-            if (matchReason == null) {
-                //todo log ignore
-                log.info("Ignore file: {}", file);
-                continue;
-            }
-            if (file.isDirectory()) {
-                replace(file);
-            } else if (isZipFile(file)) {
-                log.info("Read ZIP file: {}", file);
-                try (ZipFile zipFile = new ZipFile(file)) {
-                    zipFile.stream().forEach(zipEntry -> {
-                        //todo process
-                        log.info("Read entry: {}", zipEntry);
-                    });
-                } catch (IOException e) {
-                    throw new RuntimeException("Failed to process ZIP file: " + file, e);
-                }
-            } else {
-                try (InputStream inputStream = Files.newInputStream(file.toPath())) {
-                    fileReplacer.replace(file.getAbsolutePath(), inputStream);
-                } catch (IOException e) {
-                    throw new RuntimeException("Failed to process file: " + file, e);
-                }
-            }
-        }
+    public void replace(Path folder) {
+        replace(folder, folder);
     }
 
-    static boolean isZipFile(File file) {
+    void replace(Path folder, Path rootFolder) {
+        if (!Files.isDirectory(folder)) {
+            throw new RuntimeException("Not a folder: " + folder);
+        }
+        try (Stream<Path> files = Files.list(folder)) {
+            files.forEach(file -> {
+                String relativeFile = rootFolder.relativize(file).toString();
+
+                String name = file.getFileName().toString();//Name();
+                String matchReason = fileMatcher.getMatchReason(name);
+                if (matchReason == null) {
+                    //todo log ignore
+                    log.info("Ignore file: {}", relativeFile);
+                    return;
+                }
+                if (Files.isDirectory(file)) {
+                    replace(file, rootFolder);
+                } else if (isZipFile(file)) {
+                    log.info("Read ZIP file: {}", relativeFile);
+                    try (ZipFile zipFile = new ZipFile(file.toFile())) {
+                        zipFile.stream().forEach(zipEntry -> {
+                            //todo process
+                            log.info("TODO Read entry: {}!{}", relativeFile, zipEntry);
+                        });
+                    } catch (IOException e) {
+                        throw new RuntimeException("Failed to process ZIP file: " + relativeFile, e);
+                    }
+                } else {
+                    try (InputStream inputStream = Files.newInputStream(file)) {
+                        List<String> replacedLines = fileReplacer.replace(relativeFile, inputStream);
+                        if (replacedLines != null) {
+                            replacementWriter.write(relativeFile, replacedLines);
+                        }
+                    } catch (IOException e) {
+                        throw new RuntimeException("Failed to process file: " + relativeFile, e);
+                    }
+                }
+            });
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    static boolean isZipFile(Path file) {
         byte[] bytes = new byte[4];
-        try (FileInputStream fIn = new FileInputStream(file)) {
+        try (FileInputStream fIn = new FileInputStream(file.toFile())) {
             if (fIn.read(bytes) != 4) {
                 return false;
             }

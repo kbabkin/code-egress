@@ -1,6 +1,5 @@
-folder: "."
-
-file:
+read:
+  folder: "."
   guard:
     values:
     patterns:
@@ -10,6 +9,7 @@ file:
       - "target"
       - ".git"
       - ".idea"
+      - "status.csv"
     patterns:
       - ".*\\.unzip"
       - ".*\\.class"
@@ -18,11 +18,12 @@ word:
   guard:
     values:
       - "ibm"
-      - "match"
       - "RuntimeException"
     patterns:
-    valueFiles: ${replace.valueFiles}
+    valueFiles:
+      - src/test/resources/config/word-guard-value.csv
     patternFiles:
+      - src/test/resources/config/word-guard-pattern.csv
 
   ignore:
     values:
@@ -33,11 +34,13 @@ replace:
   values:
     "ibm": "vvv1"
   valueFiles:
+    - src/test/resources/config/word-guard-value.csv
 
 write:
+  folder: target/replaced
+#  report: report.csv
+#  generatedReplacement: generated-replacement.csv
 
-status:
-
-overrides:
-
-rules:
+#manual:
+#overrides:
+#rules:

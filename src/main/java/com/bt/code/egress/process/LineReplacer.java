@@ -1,6 +1,9 @@
 package com.bt.code.egress.process;
 
-import com.bt.code.egress.read.*;
+import com.bt.code.egress.read.LineLocation;
+import com.bt.code.egress.read.LineMatcher;
+import com.bt.code.egress.read.LineToken;
+import com.bt.code.egress.read.WordMatch;
 import lombok.RequiredArgsConstructor;
 
 import java.util.function.Consumer;

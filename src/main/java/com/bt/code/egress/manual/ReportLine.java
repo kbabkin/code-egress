@@ -4,11 +4,11 @@ import lombok.Value;
 
 @Value
 public class ReportLine {
+    Boolean correct;
     String word;
+    String context;
     String file;
     Integer line;
-    Boolean correct;
-    String context;
-    String lineHash;
+    String replacement;
     String comment;
 }

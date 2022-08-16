@@ -1,7 +1,6 @@
 package com.bt.code.egress.process;
 
 import com.bt.code.egress.read.LineLocation;
-import com.bt.code.egress.read.Matched;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -19,7 +18,7 @@ public class FileReplacer {
     private final LineReplacer lineReplacer;
     private final Consumer<Matched> picker;
 
-    public void replace(String file, InputStream inputStream) throws IOException {
+    public List<String> replace(String file, InputStream inputStream) throws IOException {
         log.info("Read file: {}", file);
         BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
         String line;
@@ -36,6 +35,9 @@ public class FileReplacer {
         if (changed) {
             //todo store to file, can combine with picker
             log.debug("File {} is changed, new content:\n{}", file, String.join("\n", replacedLines));
+            return replacedLines;
+        } else {
+            return null;
         }
 
     }

@@ -1,5 +1,11 @@
 package com.bt.code.egress.write;
 
-public class FileOverride {
-    // todo write results
+import java.util.List;
+
+public class FileOverride implements ReplacementWriter {
+    @Override
+    public void write(String file, List<String> replacedLines) {
+        // todo write results
+    }
+
 }

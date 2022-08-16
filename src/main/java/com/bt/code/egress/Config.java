@@ -16,7 +16,7 @@ import java.util.Set;
 @ConfigurationProperties
 @Data
 public class Config {
-    MatchingGroups file = new MatchingGroups();
+    MatchingGroups read = new MatchingGroups();
     MatchingGroups word = new MatchingGroups();
     MapGroup replace = new MapGroup();
 

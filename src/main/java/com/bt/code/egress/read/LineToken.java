@@ -1,11 +1,15 @@
 package com.bt.code.egress.read;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 public class LineToken {
+    @Getter
     private final String line;
+    @Getter
     private final int startPos;
+    @Getter
     private final int endPos;
 
     private String wordLowerCase;
