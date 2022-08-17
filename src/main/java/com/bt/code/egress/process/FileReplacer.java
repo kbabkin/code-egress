@@ -16,7 +16,7 @@ import java.util.List;
 @Slf4j
 public class FileReplacer {
     private final LineReplacer lineReplacer;
-    private final Matched.Listener matchedListener;
+    private final TextMatched.Listener textMatchedListener;
 
     public FileCompleted replace(String file, InputStream inputStream) throws IOException {
         log.info("Read file: {}", file);
@@ -26,7 +26,7 @@ public class FileReplacer {
         ArrayList<String> originalLines = new ArrayList<>();
         List<String> replacedLines = new ArrayList<>();
         while (((line = reader.readLine()) != null)) {
-            String replace = lineReplacer.replace(line, new LineLocation(file, ++lineNum), matchedListener);
+            String replace = lineReplacer.replace(line, new LineLocation(file, ++lineNum), textMatchedListener);
             originalLines.add(line);
             replacedLines.add(replace);
         }

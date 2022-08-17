@@ -11,7 +11,7 @@ public class Report {
     @Value
     public static class ReportLine {
         Boolean allow;
-        String word;
+        String text;
         String context;
         String file;
         Integer line;

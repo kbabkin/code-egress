@@ -5,7 +5,7 @@ import com.bt.code.egress.read.LineToken;
 import lombok.Value;
 
 @Value
-public class Matched {
+public class TextMatched {
     LineLocation lineLocation;
     LineToken lineToken;
     Boolean allowed;
@@ -14,6 +14,6 @@ public class Matched {
 
     @FunctionalInterface
     public interface Listener {
-        void onMatched(Matched matched);
+        void onMatched(TextMatched textMatched);
     }
 }

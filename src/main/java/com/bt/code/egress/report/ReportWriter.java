@@ -16,7 +16,7 @@ import java.util.List;
 public class ReportWriter implements Report.Listener {
     private static final Comparator<Report.ReportLine> WRITE_ORDER =
             Comparator.comparing(Report.ReportLine::getAllow, Comparator.nullsLast(Comparator.reverseOrder()))
-                    .thenComparing(Report.ReportLine::getWord, Comparator.nullsLast(Comparator.naturalOrder()))
+                    .thenComparing(Report.ReportLine::getText, Comparator.nullsLast(Comparator.naturalOrder()))
                     .thenComparing(Report.ReportLine::getContext, Comparator.nullsLast(Comparator.naturalOrder()))
                     .thenComparing(Report.ReportLine::getFile, Comparator.nullsLast(Comparator.naturalOrder()))
                     .thenComparing(Report.ReportLine::getLine, Comparator.nullsLast(Comparator.naturalOrder()));

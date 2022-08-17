@@ -1,6 +1,6 @@
 package com.bt.code.egress.report;
 
-import com.bt.code.egress.process.Matched;
+import com.bt.code.egress.process.TextMatched;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -10,21 +10,21 @@ import java.util.List;
 
 @RequiredArgsConstructor
 @Slf4j
-public class ReportCollector implements Matched.Listener {
+public class ReportCollector implements TextMatched.Listener {
     private final ReportHelper reportHelper;
     private final List<Report.ReportLine> reportLines = new ArrayList<>();
 
     @Override
-    public void onMatched(Matched matched) {
-        log.info("Matched: {}", matched);
+    public void onMatched(TextMatched textMatched) {
+        log.info("Matched: {}", textMatched);
         reportLines.add(new Report.ReportLine(
-                matched.getAllowed(),
-                matched.getLineToken().getWordLowerCase(),
-                reportHelper.getContext(matched.getLineToken()),
-                matched.getLineLocation().getFile(),
-                matched.getLineLocation().getLineNum(),
-                matched.getReplacement(),
-                matched.getComment()
+                textMatched.getAllowed(),
+                textMatched.getLineToken().getWordLowerCase(),
+                reportHelper.getContext(textMatched.getLineToken()),
+                textMatched.getLineLocation().getFile(),
+                textMatched.getLineLocation().getLineNum(),
+                textMatched.getReplacement(),
+                textMatched.getComment()
         ));
     }
 

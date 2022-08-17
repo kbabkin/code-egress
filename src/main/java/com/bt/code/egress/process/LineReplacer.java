@@ -12,7 +12,7 @@ public class LineReplacer {
     private final LineMatcher lineMatcher;
     private final WordReplacer wordReplacer;
 
-    public String replace(String line, LineLocation lineLocation, Matched.Listener matchedListener) {
+    public String replace(String line, LineLocation lineLocation, TextMatched.Listener textMatchedListener) {
         LineToken lineToken = new LineToken(line);
         LineToken prevToken;
         WordMatch wordMatch;
@@ -29,7 +29,7 @@ public class LineReplacer {
 
             processed = processed == null ? withBefore : processed + withBefore;
             unprocessed = lineToken.getAfter();
-            matchedListener.onMatched(new Matched(lineLocation, lineToken, wordMatch.getAllowed(), replacement, wordMatch.getReason()));
+            textMatchedListener.onMatched(new TextMatched(lineLocation, lineToken, wordMatch.getAllowed(), replacement, wordMatch.getReason()));
         }
         return processed == null ? unprocessed : processed + unprocessed;
     }

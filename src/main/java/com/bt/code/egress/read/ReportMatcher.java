@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ReportMatcher {
     private final ReportHelper reportHelper;
-    private final Map<String, List<Report.ReportLine>> rowsByWord;
+    private final Map<String, List<Report.ReportLine>> rowsByText;
 
     public static ReportMatcher fromConfigs(ReportHelper reportHelper, Set<String> allowReportFiles) {
         Map<String, List<Report.ReportLine>> rowsByWord = allowReportFiles.stream()
@@ -22,14 +22,14 @@ public class ReportMatcher {
                 .flatMap(Collection::stream)
                 .filter(r -> Objects.nonNull(r.getAllow()))
                 .distinct()
-                .collect(Collectors.groupingBy(Report.ReportLine::getWord));
+                .collect(Collectors.groupingBy(Report.ReportLine::getText));
         return new ReportMatcher(reportHelper, rowsByWord);
     }
 
 
     public Boolean getAllowed(LineToken lineToken, LineLocation lineLocation) {
         String word = lineToken.getWordLowerCase();
-        List<Report.ReportLine> reportLines = rowsByWord.get(word);
+        List<Report.ReportLine> reportLines = rowsByText.get(word);
         if (reportLines == null) {
             return null;
         }

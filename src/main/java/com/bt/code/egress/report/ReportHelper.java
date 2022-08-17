@@ -23,7 +23,7 @@ import java.util.List;
 public class ReportHelper {
     enum Headers {
         Allow,
-        Word,
+        Text,
         Context,
         File,
         Line,
@@ -68,7 +68,7 @@ public class ReportHelper {
             for (Report.ReportLine reportLine : reportLines) {
                 printer.printRecord(
                         reportLine.getAllow(),
-                        reportLine.getWord(),
+                        reportLine.getText(),
                         reportLine.getContext(),
                         reportLine.getFile(),
                         reportLine.getLine(),
@@ -96,7 +96,7 @@ public class ReportHelper {
         for (CSVRecord record : records) {
             reportLines.add(new Report.ReportLine(
                     toBoolean(record.get(Headers.Allow)),
-                    record.get(Headers.Word),
+                    record.get(Headers.Text),
                     record.get(Headers.Context),
                     record.get(Headers.File),
                     toInteger(record.get(Headers.Line)),
