@@ -13,6 +13,7 @@ read:
     patterns:
       - ".*\\.unzip"
       - ".*\\.class"
+      - "\\.attach_pid.*"
 
 word:
   guard:

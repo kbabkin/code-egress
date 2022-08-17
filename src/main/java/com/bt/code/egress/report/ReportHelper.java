@@ -63,9 +63,9 @@ public class ReportHelper {
         return c <= ' ';
     }
 
-    public void write(Appendable writer, List<ReportLine> reportLines) throws IOException {
+    public void write(Appendable writer, List<Report.ReportLine> reportLines) throws IOException {
         try (CSVPrinter printer = new CSVPrinter(writer, CSV_FORMAT)) {
-            for (ReportLine reportLine : reportLines) {
+            for (Report.ReportLine reportLine : reportLines) {
                 printer.printRecord(
                         reportLine.getAllow(),
                         reportLine.getWord(),
@@ -78,7 +78,7 @@ public class ReportHelper {
         }
     }
 
-    public List<ReportLine> read(Path path) {
+    public List<Report.ReportLine> read(Path path) {
         if (!Files.exists(path)) {
             log.info("Skip missing allow config report file {}", path);
             return Collections.emptyList();
@@ -90,11 +90,11 @@ public class ReportHelper {
         }
     }
 
-    public List<ReportLine> read(Reader reader) throws IOException {
-        List<ReportLine> reportLines = new ArrayList<>();
+    public List<Report.ReportLine> read(Reader reader) throws IOException {
+        List<Report.ReportLine> reportLines = new ArrayList<>();
         CSVParser records = CSV_FORMAT.withFirstRecordAsHeader().parse(reader);
         for (CSVRecord record : records) {
-            reportLines.add(new ReportLine(
+            reportLines.add(new Report.ReportLine(
                     toBoolean(record.get(Headers.Allow)),
                     record.get(Headers.Word),
                     record.get(Headers.Context),

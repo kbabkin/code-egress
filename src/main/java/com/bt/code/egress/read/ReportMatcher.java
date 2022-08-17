@@ -1,7 +1,7 @@
 package com.bt.code.egress.read;
 
+import com.bt.code.egress.report.Report;
 import com.bt.code.egress.report.ReportHelper;
-import com.bt.code.egress.report.ReportLine;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -14,22 +14,22 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ReportMatcher {
     private final ReportHelper reportHelper;
-    private final Map<String, List<ReportLine>> rowsByWord;
+    private final Map<String, List<Report.ReportLine>> rowsByWord;
 
     public static ReportMatcher fromConfigs(ReportHelper reportHelper, Set<String> allowReportFiles) {
-        Map<String, List<ReportLine>> rowsByWord = allowReportFiles.stream()
+        Map<String, List<Report.ReportLine>> rowsByWord = allowReportFiles.stream()
                 .map(file -> reportHelper.read(Paths.get(file)))
                 .flatMap(Collection::stream)
                 .filter(r -> Objects.nonNull(r.getAllow()))
                 .distinct()
-                .collect(Collectors.groupingBy(ReportLine::getWord));
+                .collect(Collectors.groupingBy(Report.ReportLine::getWord));
         return new ReportMatcher(reportHelper, rowsByWord);
     }
 
 
     public Boolean getAllowed(LineToken lineToken, LineLocation lineLocation) {
         String word = lineToken.getWordLowerCase();
-        List<ReportLine> reportLines = rowsByWord.get(word);
+        List<Report.ReportLine> reportLines = rowsByWord.get(word);
         if (reportLines == null) {
             return null;
         }
@@ -45,9 +45,9 @@ public class ReportMatcher {
                 })
                 .filter(r -> {
                     String file = r.getFile();
-                    return file == null || file.equals(lineLocation.getFile());
+                    return StringUtils.isBlank(file) || file.equals(lineLocation.getFile());
                 })
-                .map(ReportLine::getAllow)
+                .map(Report.ReportLine::getAllow)
                 // if both allowing and disallowing rows, use allowing one
                 .reduce((b1, b2) -> true);
 

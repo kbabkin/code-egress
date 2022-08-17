@@ -1,7 +1,7 @@
 package com.bt.code.egress.process;
 
 import com.bt.code.egress.read.GroupMatcher;
-import com.bt.code.egress.write.ReplacementWriter;
+import com.bt.code.egress.write.FileCompleted;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.stream.Stream;
 import java.util.zip.ZipFile;
 
@@ -19,7 +18,7 @@ import java.util.zip.ZipFile;
 public class FolderReplacer {
     private final FileReplacer fileReplacer;
     private final GroupMatcher fileMatcher;
-    private final ReplacementWriter replacementWriter;
+    private final FileCompleted.Listener fileCompletedListener;
 
     public void replace(Path folder) {
         replace(folder, folder);
@@ -54,10 +53,8 @@ public class FolderReplacer {
                     }
                 } else {
                     try (InputStream inputStream = Files.newInputStream(file)) {
-                        List<String> replacedLines = fileReplacer.replace(relativeFile, inputStream);
-                        if (replacedLines != null) {
-                            replacementWriter.write(relativeFile, replacedLines);
-                        }
+                        FileCompleted fileCompleted = fileReplacer.replace(relativeFile, inputStream);
+                        fileCompletedListener.onFileCompleted(fileCompleted);
                     } catch (IOException e) {
                         throw new RuntimeException("Failed to process file: " + relativeFile, e);
                     }

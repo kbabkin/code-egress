@@ -7,10 +7,11 @@ import com.bt.code.egress.process.WordReplacer;
 import com.bt.code.egress.read.GroupMatcher;
 import com.bt.code.egress.read.LineMatcher;
 import com.bt.code.egress.read.ReportMatcher;
+import com.bt.code.egress.report.ReportCollector;
 import com.bt.code.egress.report.ReportHelper;
 import com.bt.code.egress.report.ReportWriter;
 import com.bt.code.egress.write.EmptyFolderWriter;
-import com.bt.code.egress.write.ReplacementWriter;
+import com.bt.code.egress.write.FileCompleted;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
@@ -47,12 +48,13 @@ public class App implements ApplicationRunner {
         LineMatcher lineMatcher = new LineMatcher(GroupMatcher.fromConfigs(config.word), reportMatcher);
         WordReplacer wordReplacer = WordReplacer.fromConfig(config.replace);
         LineReplacer lineReplacer = new LineReplacer(lineMatcher, wordReplacer);
+        ReportCollector reportCollector = new ReportCollector(reportHelper);
+        FileReplacer fileReplacer = new FileReplacer(lineReplacer, reportCollector);
+        FileCompleted.Listener fileCompletedListener = new EmptyFolderWriter(writeFolder.toPath());
+        FolderReplacer folderReplacer = new FolderReplacer(fileReplacer, fileMatcher, fileCompletedListener);
         ReportWriter reportWriter = new ReportWriter(reportHelper, writeReport.toPath());
-        FileReplacer fileReplacer = new FileReplacer(lineReplacer, reportWriter::pick);
-        ReplacementWriter replacementWriter = new EmptyFolderWriter(writeFolder.toPath());
-        FolderReplacer folderReplacer = new FolderReplacer(fileReplacer, fileMatcher, replacementWriter);
 
         folderReplacer.replace(folder.toPath());
-        reportWriter.write();
+        reportWriter.onReport(reportCollector.toReport());
     }
 }

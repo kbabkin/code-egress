@@ -11,4 +11,9 @@ public class Matched {
     Boolean allowed;
     String replacement;
     String comment;
+
+    @FunctionalInterface
+    public interface Listener {
+        void onMatched(Matched matched);
+    }
 }
