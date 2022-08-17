@@ -5,9 +5,9 @@ import com.bt.code.egress.write.FileCompleted;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Stream;
@@ -52,8 +52,8 @@ public class FolderReplacer {
                         throw new RuntimeException("Failed to process ZIP file: " + relativeFile, e);
                     }
                 } else {
-                    try (InputStream inputStream = Files.newInputStream(file)) {
-                        FileCompleted fileCompleted = fileReplacer.replace(relativeFile, inputStream);
+                    try (BufferedReader bufferedReader = Files.newBufferedReader(file)) {
+                        FileCompleted fileCompleted = fileReplacer.replace(relativeFile, bufferedReader);
                         fileCompletedListener.onFileCompleted(fileCompleted);
                     } catch (IOException e) {
                         throw new RuntimeException("Failed to process file: " + relativeFile, e);
