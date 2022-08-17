@@ -5,9 +5,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class LineMatcher {
     private final GroupMatcher wordMatcher;
-    private final WordMatcher lineNegativeMatcher;
+    private final ReportMatcher reportMatcher;
 
-    public WordMatch nextMatch(LineToken prev) {
+    public WordMatch nextMatch(LineToken prev, LineLocation lineLocation) {
         LineToken lineToken = prev;
         while ((lineToken = lineToken.nextToken()) != null) {
             String word = lineToken.getWordLowerCase();
@@ -15,14 +15,8 @@ public class LineMatcher {
             if (matchReason == null) {
                 continue;
             }
-            if (lineNegativeMatcher != null) {
-                String lineLower = lineToken.getLineLowerCase();
-                if (lineNegativeMatcher.getMatchReason(lineLower) != null) {
-                    //todo log ignore
-                    return null;
-                }
-            }
-            return new WordMatch(lineToken, matchReason);
+            // reportMatcher can return null
+            return new WordMatch(lineToken, matchReason, reportMatcher.getAllowed(lineToken, lineLocation));
         }
         return null;
     }

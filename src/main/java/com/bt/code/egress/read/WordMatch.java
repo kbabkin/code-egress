@@ -6,4 +6,5 @@ import lombok.Value;
 public class WordMatch {
     LineToken lineToken;
     String reason;
+    Boolean allowed;
 }

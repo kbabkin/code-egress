@@ -13,7 +13,6 @@ public class LineToken {
     private final int endPos;
 
     private String wordLowerCase;
-    private String lineLowerCase;
 
     public LineToken(String line) {
         this(line, 0, 0);
@@ -26,15 +25,8 @@ public class LineToken {
         return wordLowerCase;
     }
 
-    public String getLineLowerCase() {
-        if (lineLowerCase == null) {
-            lineLowerCase = line.toLowerCase();
-        }
-        return lineLowerCase;
-    }
-
-    public String getBefore() {
-        return line.substring(0, startPos);
+    public String getBefore(LineToken prevToken) {
+        return line.substring(prevToken.getEndPos(), startPos);
     }
 
     public String getAfter() {

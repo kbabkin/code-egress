@@ -1,8 +1,14 @@
 package com.bt.code.egress;
 
-import com.bt.code.egress.process.*;
+import com.bt.code.egress.process.FileReplacer;
+import com.bt.code.egress.process.FolderReplacer;
+import com.bt.code.egress.process.LineReplacer;
+import com.bt.code.egress.process.WordReplacer;
 import com.bt.code.egress.read.GroupMatcher;
 import com.bt.code.egress.read.LineMatcher;
+import com.bt.code.egress.read.ReportMatcher;
+import com.bt.code.egress.report.ReportHelper;
+import com.bt.code.egress.report.ReportWriter;
 import com.bt.code.egress.write.EmptyFolderWriter;
 import com.bt.code.egress.write.ReplacementWriter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +33,8 @@ public class App implements ApplicationRunner {
     File folder;
     @Value("${write.folder}")
     File writeFolder;
+    @Value("${write.report}")
+    File writeReport;
 
     @Autowired
     Config config;
@@ -34,15 +42,17 @@ public class App implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         GroupMatcher fileMatcher = GroupMatcher.fromConfigs(config.read);
-        LineMatcher lineMatcher = new LineMatcher(GroupMatcher.fromConfigs(config.word), null); //todo line ignore
+        ReportHelper reportHelper = new ReportHelper(15);
+        ReportMatcher reportMatcher = ReportMatcher.fromConfigs(reportHelper, config.getAllow().getReportFiles());
+        LineMatcher lineMatcher = new LineMatcher(GroupMatcher.fromConfigs(config.word), reportMatcher);
         WordReplacer wordReplacer = WordReplacer.fromConfig(config.replace);
         LineReplacer lineReplacer = new LineReplacer(lineMatcher, wordReplacer);
-        Picker picker = new Picker();
-        FileReplacer fileReplacer = new FileReplacer(lineReplacer, picker::pick);
+        ReportWriter reportWriter = new ReportWriter(reportHelper, writeReport.toPath());
+        FileReplacer fileReplacer = new FileReplacer(lineReplacer, reportWriter::pick);
         ReplacementWriter replacementWriter = new EmptyFolderWriter(writeFolder.toPath());
         FolderReplacer folderReplacer = new FolderReplacer(fileReplacer, fileMatcher, replacementWriter);
 
         folderReplacer.replace(folder.toPath());
-        picker.write();
+        reportWriter.write();
     }
 }

@@ -16,17 +16,22 @@ public class LineReplacer {
 
     public String replace(String line, LineLocation lineLocation, Consumer<Matched> listener) {
         LineToken lineToken = new LineToken(line);
+        LineToken prevToken;
         WordMatch wordMatch;
         String processed = null;
         String unprocessed = line;
-        while ((wordMatch = lineMatcher.nextMatch(lineToken)) != null) {
+        while ((wordMatch = lineMatcher.nextMatch(lineToken, lineLocation)) != null) {
+            prevToken = lineToken;
             lineToken = wordMatch.getLineToken();
+
             String replacement = wordReplacer.replace(lineToken.getWordLowerCase());
-            processed = processed == null
-                    ? lineToken.getBefore() + replacement
-                    : processed + lineToken.getBefore() + replacement;
+            String withBefore = (Boolean.TRUE.equals(wordMatch.getAllowed()))
+                    ? lineToken.getLine().substring(prevToken.getEndPos(), lineToken.getEndPos())
+                    : lineToken.getBefore(prevToken) + replacement;
+
+            processed = processed == null ? withBefore : processed + withBefore;
             unprocessed = lineToken.getAfter();
-            listener.accept(new Matched(lineLocation, lineToken, replacement, wordMatch.getReason()));
+            listener.accept(new Matched(lineLocation, lineToken, wordMatch.getAllowed(), replacement, wordMatch.getReason()));
         }
         return processed == null ? unprocessed : processed + unprocessed;
     }

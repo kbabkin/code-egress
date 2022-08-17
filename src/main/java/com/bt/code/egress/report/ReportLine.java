@@ -1,10 +1,10 @@
-package com.bt.code.egress.manual;
+package com.bt.code.egress.report;
 
 import lombok.Value;
 
 @Value
 public class ReportLine {
-    Boolean correct;
+    Boolean allow;
     String word;
     String context;
     String file;

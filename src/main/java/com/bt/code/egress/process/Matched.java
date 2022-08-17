@@ -8,6 +8,7 @@ import lombok.Value;
 public class Matched {
     LineLocation lineLocation;
     LineToken lineToken;
+    Boolean allowed;
     String replacement;
     String comment;
 }

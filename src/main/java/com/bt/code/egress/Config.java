@@ -19,6 +19,7 @@ public class Config {
     MatchingGroups read = new MatchingGroups();
     MatchingGroups word = new MatchingGroups();
     MapGroup replace = new MapGroup();
+    Allow allow = new Allow();
 
     @Data
     public static class MatchingGroups {
@@ -40,4 +41,8 @@ public class Config {
         Set<String> valueFiles = new HashSet<>();
     }
 
+    @Data
+    public static class Allow {
+        Set<String> reportFiles = new HashSet<>();
+    }
 }

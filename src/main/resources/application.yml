@@ -9,7 +9,7 @@ read:
       - "target"
       - ".git"
       - ".idea"
-      - "status.csv"
+      - "code-report.csv"
     patterns:
       - ".*\\.unzip"
       - ".*\\.class"
@@ -36,11 +36,16 @@ replace:
   valueFiles:
     - src/test/resources/config/word-guard-value.csv
 
+# Manual override for false-positives
+allow:
+  reportFiles:
+    - src/test/resources/config/allow-report.csv
+    - target/code-report.csv # results from previous run, overridden after rerun, so manual changes in it can be lost
+
 write:
   folder: target/replaced
-#  report: report.csv
+  report: target/code-report.csv
+
 #  generatedReplacement: generated-replacement.csv
 
-#manual:
-#overrides:
-#rules:
+#ignore-escalate
