@@ -63,6 +63,7 @@ public class Config {
                     .map(String::toLowerCase)
                     .collect(Collectors.toSet()),
                     load(matchingGroup.getPatterns(), matchingGroup.getPatternFiles()).stream()
+                            .distinct()
                             .map(Pattern::compile)
                             .collect(Collectors.toList()));
         }

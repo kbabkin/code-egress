@@ -36,6 +36,10 @@ public class LineToken {
 
     public boolean isAlphabetic(int index) {
         int codePoint = line.codePointAt(index);
+        return isAlphabeticChar(codePoint);
+    }
+
+    public static boolean isAlphabeticChar(int codePoint) {
 //        return Character.isAlphabetic(codePoint);
         return (codePoint >= 'a' && codePoint <= 'z')
                 || (codePoint >= 'A' && codePoint <= 'Z')

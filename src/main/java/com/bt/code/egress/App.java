@@ -43,7 +43,7 @@ public class App implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         WordGuardIgnoreMatcher fileMatcher = WordGuardIgnoreMatcher.fromConfigs(config.read);
-        LineGuardIgnoreMatcher lineMatcher = LineGuardIgnoreMatcher.fromConfigs(config.word);
+        LineGuardIgnoreMatcher lineMatcher = LineGuardIgnoreMatcher.fromConfigsOptimized(config.word);
         ReportHelper reportHelper = new ReportHelper(15);
         ReportMatcher reportMatcher = ReportMatcher.fromConfigs(reportHelper, config.getAllow().getReportFiles());
         WordReplacer wordReplacer = WordReplacer.fromConfig(config.replace);
