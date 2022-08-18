@@ -24,6 +24,8 @@
         <maven.compiler.target>8</maven.compiler.target>
         <mockito.version>4.5.0</mockito.version>
         <postgresql.version>42.3.6</postgresql.version>
+        <opencsv.version>4.1</opencsv.version>
+        <zip4j.version>2.11.1</zip4j.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
@@ -87,6 +89,16 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>${logback.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.opencsv</groupId>
+            <artifactId>opencsv</artifactId>
+            <version>${opencsv.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>net.lingala.zip4j</groupId>
+            <artifactId>zip4j</artifactId>
+            <version>${zip4j.version}</version>
         </dependency>
 
         <dependency>

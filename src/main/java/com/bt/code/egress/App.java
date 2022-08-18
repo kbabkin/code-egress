@@ -1,9 +1,6 @@
 package com.bt.code.egress;
 
-import com.bt.code.egress.process.FileReplacer;
-import com.bt.code.egress.process.FolderReplacer;
-import com.bt.code.egress.process.LineReplacer;
-import com.bt.code.egress.process.WordReplacer;
+import com.bt.code.egress.process.*;
 import com.bt.code.egress.read.GroupMatcher;
 import com.bt.code.egress.read.LineMatcher;
 import com.bt.code.egress.read.ReportMatcher;
@@ -21,6 +18,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Import;
 
 import java.io.File;
+import java.util.zip.ZipEntry;
 
 @SpringBootApplication
 @Import(Config.class)
@@ -50,11 +48,15 @@ public class App implements ApplicationRunner {
         LineReplacer lineReplacer = new LineReplacer(lineMatcher, wordReplacer);
         ReportCollector reportCollector = new ReportCollector(reportHelper);
         FileReplacer fileReplacer = new FileReplacer(lineReplacer, reportCollector);
-        FileCompleted.Listener fileCompletedListener = new EmptyFolderWriter(writeFolder.toPath());
-        FolderReplacer folderReplacer = new FolderReplacer(fileReplacer, fileMatcher, fileCompletedListener);
+        CsvFileReplacer csvFileReplacer = new CsvFileReplacer(config.csv);
+        ZipRegistry zipRegistry = new ZipRegistry();
+        FileCompleted.Listener fileCompletedListener = new EmptyFolderWriter(writeFolder.toPath(), zipRegistry);
+        FolderReplacer folderReplacer = new FolderReplacer(fileReplacer, csvFileReplacer, fileMatcher, fileCompletedListener, zipRegistry);
         ReportWriter reportWriter = new ReportWriter(reportHelper, writeReport.toPath());
 
         folderReplacer.replace(folder.toPath());
         reportWriter.onReport(reportCollector.toReport());
+
+        zipRegistry.close();
     }
 }

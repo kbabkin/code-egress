@@ -2,11 +2,12 @@ package com.bt.code.egress.write;
 
 import lombok.Value;
 
+import java.nio.file.Path;
 import java.util.List;
 
 @Value
 public class FileCompleted {
-    String file;
+    Path file;
     List<String> originalLines;
     List<String> replacedLines;
 

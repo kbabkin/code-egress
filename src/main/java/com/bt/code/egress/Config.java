@@ -5,10 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 
 @Configuration
@@ -20,6 +17,7 @@ public class Config {
     MatchingGroups word = new MatchingGroups();
     MapGroup replace = new MapGroup();
     Allow allow = new Allow();
+    CsvReplacementConfig csv = new CsvReplacementConfig();
 
     @Data
     public static class MatchingGroups {
@@ -44,5 +42,30 @@ public class Config {
     @Data
     public static class Allow {
         Set<String> reportFiles = new HashSet<>();
+    }
+
+    @Data
+    public static class CsvReplacementConfig {
+        Boolean enabled;
+        List<CsvFileDescriptor> files;
+
+        public boolean includes(String filename) {
+            return files.stream().anyMatch(f -> f.getFilename().equals(filename));
+        }
+        public CsvFileDescriptor get(String filename) {
+            return files.stream().filter(f -> f.getFilename().equals(filename)).findFirst().orElse(null);
+        }
+    }
+
+    @Data
+    public static class CsvFileDescriptor {
+        String filename;
+        Columns columns;
+    }
+
+    @Data
+    public static class Columns {
+        Map<String, String> replace = new LinkedHashMap<>();
+        List<String> clear = new ArrayList<>();
     }
 }
