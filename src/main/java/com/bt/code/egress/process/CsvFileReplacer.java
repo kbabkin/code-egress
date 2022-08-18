@@ -68,13 +68,13 @@ public class CsvFileReplacer {
             Integer targetColumnIndex = columnIndex.get(targetColumn);
 
             if (sourceColumnIndex == null) {
-                log.error("Source column {} not found in file {}", sourceColumn, filename);
-                continue;
+                throw new RuntimeException(String.format("Source column %s not found in file %s",
+                        sourceColumn, filename));
             }
 
             if (targetColumnIndex == null) {
-                log.error("Target column {} not found in file {}", targetColumn, filename);
-                continue;
+                throw new RuntimeException(String.format("Target column %s not found in file %s",
+                        targetColumn, filename));
             }
 
             copyColumnValue(contents, sourceColumnIndex, targetColumnIndex, rowIndex -> rowIndex > 0);
@@ -103,11 +103,13 @@ public class CsvFileReplacer {
             if (rowFilter.test(iRow)) {
                 String[] row = contents.get(iRow);
                 if (sourceColumnIndex >= row.length) {
-                    log.warn("Out of bounds : Could not copy FROM column #{} in row #{}: {}", sourceColumnIndex, iRow, ArrayUtils.toString(row));
+                    throw new RuntimeException(String.format("Out of bounds : Could not copy FROM column #%s in row #%s: %s",
+                            sourceColumnIndex, iRow, ArrayUtils.toString(row)));
                 } else {
                     String sourceValue = row[sourceColumnIndex];
                     if (targetColumnIndex >= row.length) {
-                        log.warn("Out of bounds : Could not copy '{}' TO column #{} in row #{}: {}", sourceValue, targetColumnIndex, iRow, ArrayUtils.toString(row));
+                        throw new RuntimeException(String.format("Out of bounds : Could not copy '%s' TO column #%s in row #%s: %s",
+                                sourceValue, targetColumnIndex, iRow, ArrayUtils.toString(row)));
                     } else {
                         row[targetColumnIndex] = sourceValue;
                     }

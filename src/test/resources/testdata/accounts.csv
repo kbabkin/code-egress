@@ -1,4 +1,4 @@
 id,shortName,longName,description,email,address
-1001,ACC_LEHMAN001,"Lehman Brothers, Inc 001",Account 001 for Petesburg, acct01@lehman.com,"Ave 50, 251, NY, USA"
-1002,ACC_LEHMAN002,"Lehman Brothers, Inc 002",Account 002 for Petesburg, acct02@lehman.com,"Ave 50, 251, NY, USA"
-2001,ACC_MORGAN001,"Morgan, Inc 001",Account 001 for Philadelphia, paul@morgan.com,"Str 10, 551, NY, USA"
+1001,ACC_DUMMY001,"Dummy , Inc 001",Account 001 for Petesburg, acct01@dummy.com,"Ave 50, 251, NY, USA"
+1002,ACC_DUMMY002,"Dummy , Inc 002",Account 002 for Petesburg, acct02@dummy.com,"Ave 50, 251, NY, USA"
+2001,ACC_YUPPI001,"Yuppi, Inc 001",Account 001 for Philadelphia, paul@yuppi.com,"Str 10, 551, NY, USA"
