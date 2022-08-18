@@ -30,7 +30,7 @@ public class ReportMatcher {
     public Boolean getAllowed(LineToken lineToken, LineLocation lineLocation) {
         String word = lineToken.getWordLowerCase();
         List<Report.ReportLine> reportLines = rowsByText.get(word);
-        if (reportLines == null) {
+        if (reportLines == null || reportLines.isEmpty()) {
             return null;
         }
 
@@ -38,10 +38,7 @@ public class ReportMatcher {
         Optional<Boolean> optionalAllowed = reportLines.stream()
                 .filter(r -> {
                     String context = r.getContext();
-                    if (StringUtils.isBlank(context)) {
-                        return true;
-                    }
-                    return context.equals(tokenContext);
+                    return StringUtils.isBlank(context) || context.equals(tokenContext);
                 })
                 .filter(r -> {
                     String file = r.getFile();

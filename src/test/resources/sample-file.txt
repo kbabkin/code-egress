@@ -1,6 +1,8 @@
-ibm
-ibm at start
-IBM uppercase
-in IBM line
-ending with ibm
-ibm and also one more ibm
+acme
+acme at start
+ACME uppercase
+in ACME line
+ending with acme
+acme and also one more acme
+part of wordACME
+who wins? match@acme.com

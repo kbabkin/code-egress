@@ -18,9 +18,10 @@ read:
 word:
   guard:
     values:
-      - "ibm"
+      - "acme"
       - "RuntimeException"
     patterns:
+      - "\\w+@acme.\\w+"
     valueFiles:
       - src/test/resources/config/word-guard-value.csv
     patternFiles:
@@ -30,10 +31,12 @@ word:
     values:
       - "localhost"
       - "127.0.0.1"
+    patterns: # ignore pattern is searched, use ^..$ to match complete word
+      - "simpsons"
 
 replace:
   values:
-    "ibm": "vvv1"
+    "acme": "vvv1"
   valueFiles:
     - src/test/resources/config/word-guard-value.csv
 

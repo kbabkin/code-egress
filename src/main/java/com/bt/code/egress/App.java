@@ -4,9 +4,9 @@ import com.bt.code.egress.process.FileReplacer;
 import com.bt.code.egress.process.FolderReplacer;
 import com.bt.code.egress.process.LineReplacer;
 import com.bt.code.egress.process.WordReplacer;
-import com.bt.code.egress.read.GroupMatcher;
-import com.bt.code.egress.read.LineMatcher;
+import com.bt.code.egress.read.LineGuardIgnoreMatcher;
 import com.bt.code.egress.read.ReportMatcher;
+import com.bt.code.egress.read.WordGuardIgnoreMatcher;
 import com.bt.code.egress.report.ReportCollector;
 import com.bt.code.egress.report.ReportHelper;
 import com.bt.code.egress.report.ReportWriter;
@@ -42,12 +42,12 @@ public class App implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        GroupMatcher fileMatcher = GroupMatcher.fromConfigs(config.read);
+        WordGuardIgnoreMatcher fileMatcher = WordGuardIgnoreMatcher.fromConfigs(config.read);
+        LineGuardIgnoreMatcher lineMatcher = LineGuardIgnoreMatcher.fromConfigs(config.word);
         ReportHelper reportHelper = new ReportHelper(15);
         ReportMatcher reportMatcher = ReportMatcher.fromConfigs(reportHelper, config.getAllow().getReportFiles());
-        LineMatcher lineMatcher = new LineMatcher(GroupMatcher.fromConfigs(config.word), reportMatcher);
         WordReplacer wordReplacer = WordReplacer.fromConfig(config.replace);
-        LineReplacer lineReplacer = new LineReplacer(lineMatcher, wordReplacer);
+        LineReplacer lineReplacer = new LineReplacer(lineMatcher, reportMatcher, wordReplacer);
         ReportCollector reportCollector = new ReportCollector(reportHelper);
         FileReplacer fileReplacer = new FileReplacer(lineReplacer, reportCollector);
         FileCompleted.Listener fileCompletedListener = new EmptyFolderWriter(writeFolder.toPath());

@@ -6,9 +6,8 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -29,8 +28,8 @@ public class WordReplacer {
     static Map<String, String> load(Map<String, String> plain, Set<String> files) {
         Map<String, String> values = new HashMap<>(plain);
         for (String file : files) {
-            try (InputStream inputStream = Files.newInputStream(Paths.get(file))) {
-                CSVParser records = CSVFormat.DEFAULT.parse(new InputStreamReader(inputStream));
+            try (BufferedReader bufferedReader = Files.newBufferedReader(Paths.get(file))) {
+                CSVParser records = CSVFormat.DEFAULT.parse(bufferedReader);
                 for (CSVRecord record : records) {
                     String value = record.get(1);
                     if (value != null && value.trim().length() > 0) {
