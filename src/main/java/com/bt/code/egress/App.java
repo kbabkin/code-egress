@@ -39,6 +39,8 @@ public class App implements ApplicationRunner {
     File writeFolder;
     @Value("${write.report}")
     File writeReport;
+    @Value("${write.generatedReplacement}")
+    File writeGeneratedReplacement;
 
     @Autowired
     Config config;
@@ -61,6 +63,7 @@ public class App implements ApplicationRunner {
 
         folderReplacer.replace(folder.toPath());
         reportWriter.onReport(reportCollector.toReport());
+        wordReplacer.saveGenerated(writeGeneratedReplacement.toPath());
 
         log.info("Processed in {} ms, Counters: {}", System.currentTimeMillis() - startedAt, new TreeMap<>(Stats.getCounters()));
         fileCompletedListener.verify();
