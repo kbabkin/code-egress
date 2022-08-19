@@ -8,7 +8,9 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.stream.Stream;
 import net.lingala.zip4j.ZipFile;
 
@@ -16,9 +18,8 @@ import net.lingala.zip4j.ZipFile;
 @Slf4j
 public class FolderReplacer {
     private final FileReplacer fileReplacer;
-    private final WordGuardIgnoreMatcher fileMatcher;
     private final CsvFileReplacer csvFileReplacer;
-    private final GroupMatcher fileMatcher;
+    private final WordGuardIgnoreMatcher fileMatcher;
     private final FileCompleted.Listener fileCompletedListener;
 
     private final ZipRegistry zipRegistry;
