@@ -23,17 +23,17 @@ public class LineGuardIgnoreMatcher implements LineMatcher {
 
     public static LineGuardIgnoreMatcher fromConfigsOptimized(Config.MatchingGroups matchingGroups) {
         Config.ValuesAndPatterns guardVnP = Config.ValuesAndPatterns.fromConfig(matchingGroups.getGuard());
-        Map<Boolean, List<String>> byAlphabetic = guardVnP.getValues().stream()
+        Map<Boolean, List<String>> byWholeWord = guardVnP.getValues().stream()
                 .collect(Collectors.partitioningBy(w -> {
                     for (int i = 0; i < w.length(); i++) {
-                        if (!LineToken.isAlphabeticChar(w.codePointAt(i))) {
+                        if (!LineToken.isAlphanumeric(w.codePointAt(i))) {
                             return false;
                         }
                     }
                     return true;
                 }));
-        LineMatcher guard = new BasicLineMatcher(new HashSet<>(byAlphabetic.get(false)), guardVnP.getPatterns())
-                .and(new LineTokenMatcher(new BasicWordMatcher(new HashSet<>(byAlphabetic.get(true)), Collections.emptyList())));
+        LineMatcher guard = new BasicLineMatcher(new HashSet<>(byWholeWord.get(false)), guardVnP.getPatterns())
+                .and(new LineTokenMatcher(new BasicWordMatcher(new HashSet<>(byWholeWord.get(true)), Collections.emptyList())));
         WordMatcher ignore = BasicWordMatcher.fromConfig(matchingGroups.getIgnore());
         return new LineGuardIgnoreMatcher(guard, ignore);
     }

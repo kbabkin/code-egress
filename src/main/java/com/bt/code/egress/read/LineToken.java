@@ -30,25 +30,18 @@ public class LineToken {
     }
 
     public boolean isWholeWord() {
-        return (startPos <= 0 || !isAlphabetic(startPos - 1))
-                && (endPos >= line.length() || !isAlphabetic(endPos));
+        return (startPos <= 0 || !isAlphanumericAt(startPos - 1))
+                && (endPos >= line.length() || !isAlphanumericAt(endPos));
     }
 
-    public boolean isAlphabetic(int index) {
+    public boolean isAlphanumericAt(int index) {
         int codePoint = line.codePointAt(index);
-        return isAlphabeticChar(codePoint);
+        return isAlphanumeric(codePoint);
     }
 
-    public static boolean isAlphabeticChar(int codePoint) {
-//        return Character.isAlphabetic(codePoint);
-        return (codePoint >= 'a' && codePoint <= 'z')
-                || (codePoint >= 'A' && codePoint <= 'Z')
-                || (codePoint >= '0' && codePoint <= '9')
-                || codePoint == '_'
-                || codePoint == '-'
-                || codePoint == '~';
+    public static boolean isAlphanumeric(int codePoint) {
+        return Character.isAlphabetic(codePoint) || Character.isDigit(codePoint);
     }
-
 
     @Override
     public String toString() {
