@@ -10,8 +10,8 @@ import com.bt.code.egress.read.WordGuardIgnoreMatcher;
 import com.bt.code.egress.report.ReportCollector;
 import com.bt.code.egress.report.ReportHelper;
 import com.bt.code.egress.report.ReportWriter;
+import com.bt.code.egress.report.Stats;
 import com.bt.code.egress.write.EmptyFolderWriter;
-import com.bt.code.egress.write.FileCompleted;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,6 +22,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Import;
 
 import java.io.File;
+import java.util.TreeMap;
 
 @SpringBootApplication
 @Import(Config.class)
@@ -44,6 +45,7 @@ public class App implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
+        long startedAt = System.currentTimeMillis();
         WordGuardIgnoreMatcher fileMatcher = WordGuardIgnoreMatcher.fromConfigs(config.read);
         LineGuardIgnoreMatcher lineMatcher = LineGuardIgnoreMatcher.fromConfigsOptimized(config.word);
         ReportHelper reportHelper = new ReportHelper(15);
@@ -52,11 +54,15 @@ public class App implements ApplicationRunner {
         LineReplacer lineReplacer = new LineReplacer(lineMatcher, reportMatcher, wordReplacer);
         ReportCollector reportCollector = new ReportCollector(reportHelper);
         FileReplacer fileReplacer = new FileReplacer(lineReplacer, reportCollector);
-        FileCompleted.Listener fileCompletedListener = new EmptyFolderWriter(writeFolder.toPath());
+        EmptyFolderWriter fileCompletedListener = new EmptyFolderWriter(writeFolder.toPath());
         FolderReplacer folderReplacer = new FolderReplacer(fileReplacer, fileMatcher, fileCompletedListener);
         ReportWriter reportWriter = new ReportWriter(reportHelper, writeReport.toPath());
+        log.info("Configured in {} ms", System.currentTimeMillis() - startedAt);
 
         folderReplacer.replace(folder.toPath());
         reportWriter.onReport(reportCollector.toReport());
+
+        log.info("Processed in {} ms, Counters: {}", System.currentTimeMillis() - startedAt, new TreeMap<>(Stats.getCounters()));
+        fileCompletedListener.verify();
     }
 }

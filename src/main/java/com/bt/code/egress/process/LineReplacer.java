@@ -1,6 +1,7 @@
 package com.bt.code.egress.process;
 
 import com.bt.code.egress.read.*;
+import com.bt.code.egress.report.Stats;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ public class LineReplacer {
         if (rawMatches.isEmpty()) {
             return line;
         }
+        Stats.wordsMatched(rawMatches.size());
 
         List<MatchParam> matchParams = rawMatches.stream()
                 // reportMatcher can return null
@@ -60,6 +62,7 @@ public class LineReplacer {
                 String withBefore = line.substring(processedPos, lineToken.getStartPos()) + replacement;
                 processed = processed == null ? withBefore : processed + withBefore;
                 processedPos = lineToken.getEndPos();
+                Stats.wordReplaced();
             }
 
             textMatchedListener.onMatched(new TextMatched(lineLocation, lineToken, matchParam.getAllowed(), replacement,
