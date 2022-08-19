@@ -6,5 +6,10 @@ import lombok.Value;
 public class WordMatch {
     LineToken lineToken;
     String reason;
-    Boolean allowed;
+
+    public boolean isCompatible(WordMatch other) {
+        return this.lineToken.getEndPos() <= other.lineToken.getStartPos()
+                || this.lineToken.getStartPos() >= other.lineToken.getEndPos();
+    }
+
 }

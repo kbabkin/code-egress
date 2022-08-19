@@ -18,6 +18,10 @@ public class LineToken {
         this(line, 0, 0);
     }
 
+    public int getLength() {
+        return endPos - startPos;
+    }
+
     public String getWordLowerCase() {
         if (wordLowerCase == null) {
             wordLowerCase = line.substring(startPos, endPos).toLowerCase();
@@ -25,41 +29,26 @@ public class LineToken {
         return wordLowerCase;
     }
 
-    public String getBefore(LineToken prevToken) {
-        return line.substring(prevToken.getEndPos(), startPos);
+    public boolean isWholeWord() {
+        return (startPos <= 0 || !isAlphabetic(startPos - 1))
+                && (endPos >= line.length() || !isAlphabetic(endPos));
     }
 
-    public String getAfter() {
-        return line.substring(endPos);
+    public boolean isAlphabetic(int index) {
+        int codePoint = line.codePointAt(index);
+        return isAlphabeticChar(codePoint);
     }
 
-    public LineToken nextToken() {
-        int startPos = this.endPos;
-
-        while (startPos < line.length() && !isAlphabetic(line.codePointAt(startPos))) {
-            startPos++;
-        }
-        if (startPos >= line.length()) {
-            return null;
-        }
-
-        int endPos = startPos + 1;
-        while (endPos < line.length() && isAlphabetic(line.codePointAt(endPos))) {
-            endPos++;
-        }
-        return new LineToken(line, startPos, endPos);
-    }
-
-    boolean isAlphabetic(int codePoint) {
+    public static boolean isAlphabeticChar(int codePoint) {
 //        return Character.isAlphabetic(codePoint);
         return (codePoint >= 'a' && codePoint <= 'z')
                 || (codePoint >= 'A' && codePoint <= 'Z')
                 || (codePoint >= '0' && codePoint <= '9')
                 || codePoint == '_'
                 || codePoint == '-'
-                || codePoint == '~'
-                ;
+                || codePoint == '~';
     }
+
 
     @Override
     public String toString() {

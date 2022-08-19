@@ -1,24 +1,24 @@
 package com.bt.code.egress.read;
 
-import lombok.RequiredArgsConstructor;
+import java.util.ArrayList;
+import java.util.List;
 
-@RequiredArgsConstructor
-public class LineMatcher {
-    private final GroupMatcher wordMatcher;
-    private final ReportMatcher reportMatcher;
+public interface LineMatcher {
+    List<WordMatch> getMatches(String line);
 
-    public WordMatch nextMatch(LineToken prev, LineLocation lineLocation) {
-        LineToken lineToken = prev;
-        while ((lineToken = lineToken.nextToken()) != null) {
-            String word = lineToken.getWordLowerCase();
-            String matchReason = wordMatcher.getMatchReason(word);
-            if (matchReason == null) {
-                continue;
+    default LineMatcher and(LineMatcher other) {
+        return line -> {
+            List<WordMatch> matches1 = getMatches(line);
+            List<WordMatch> matches2 = other.getMatches(line);
+            if (matches1.isEmpty()) {
+                return matches2;
             }
-            // reportMatcher can return null
-            return new WordMatch(lineToken, matchReason, reportMatcher.getAllowed(lineToken, lineLocation));
-        }
-        return null;
+            if (matches2.isEmpty()) {
+                return matches1;
+            }
+            List<WordMatch> result = new ArrayList<>(matches1);
+            result.addAll(matches2);
+            return result;
+        };
     }
-
 }

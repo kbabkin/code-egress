@@ -6,7 +6,6 @@ Maintain consistent results among multiple sequential scans and pre-release scan
 
 ## Features
 - Matching on File name, Word levels
-- todo: process phrase level (email, host name)
 - todo: process statement/table-row level (SQL insert, CSV find-one-replace-all-columns)  
 - todo: ZIP archives processing
 

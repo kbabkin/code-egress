@@ -1,6 +1,6 @@
 package com.bt.code.egress.process;
 
-import com.bt.code.egress.read.GroupMatcher;
+import com.bt.code.egress.read.WordGuardIgnoreMatcher;
 import com.bt.code.egress.write.FileCompleted;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +16,7 @@ import net.lingala.zip4j.ZipFile;
 @Slf4j
 public class FolderReplacer {
     private final FileReplacer fileReplacer;
+    private final WordGuardIgnoreMatcher fileMatcher;
     private final CsvFileReplacer csvFileReplacer;
     private final GroupMatcher fileMatcher;
     private final FileCompleted.Listener fileCompletedListener;
@@ -34,7 +35,7 @@ public class FolderReplacer {
             files.forEach(file -> {
                 Path relativeFile = rootFolder.relativize(file);
 
-                String name = file.getFileName().toString();//Name();
+                String name = file.getFileName().toString().toLowerCase();
                 String matchReason = fileMatcher.getMatchReason(name);
                 if (matchReason == null) {
                     //todo log ignore
