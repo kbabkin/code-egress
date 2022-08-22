@@ -29,13 +29,13 @@ public class FileReplacer {
         List<String> replacedLines = new ArrayList<>();
         try {
             while (((line = bufferedReader.readLine()) != null)) {
-                String replace = lineReplacer.replace(line, new LineLocation(file, ++lineNum), textMatchedListener);
+                String replace = lineReplacer.replace(line, new LineLocation(file.toReportedPath(), ++lineNum), textMatchedListener);
                 originalLines.add(line);
                 replacedLines.add(replace);
             }
         } catch (MalformedInputException e) {
             log.error("Failed to read file {}", file, e);
-            textMatchedListener.onMatched(new TextMatched(new LineLocation(file, 0),
+            textMatchedListener.onMatched(new TextMatched(new LineLocation(file.toReportedPath(), 0),
                     new LineToken(""), null, "", "FAILED to read file " + file));
         }
         return new FileCompleted(file, originalLines, replacedLines);

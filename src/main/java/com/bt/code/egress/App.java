@@ -15,6 +15,7 @@ import com.bt.code.egress.report.ReportHelper;
 import com.bt.code.egress.report.ReportWriter;
 import com.bt.code.egress.report.Stats;
 import com.bt.code.egress.write.EmptyFolderWriter;
+import com.bt.code.egress.write.FileCompleted;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -60,18 +61,14 @@ public class App implements ApplicationRunner {
         ReportCollector reportCollector = new ReportCollector(reportHelper);
         FileReplacer fileReplacer = new FileReplacer(lineReplacer, reportCollector);
         EmptyFolderWriter fileCompletedListener = new EmptyFolderWriter(writeFolder.toPath());
-        FolderReplacer folderReplacer = new FolderReplacer(fileReplacer, fileMatcher, fileCompletedListener);
         CsvFileReplacer csvFileReplacer = new CsvFileReplacer(config.csv);
-        ZipRegistry zipRegistry = new ZipRegistry();
-        FileCompleted.Listener fileCompletedListener = new EmptyFolderWriter(writeFolder.toPath(), zipRegistry);
-        FolderReplacer folderReplacer = new FolderReplacer(fileReplacer, csvFileReplacer, fileMatcher, fileCompletedListener, zipRegistry);
+        FolderReplacer folderReplacer = new FolderReplacer(fileReplacer, csvFileReplacer, fileMatcher, fileCompletedListener);
         ReportWriter reportWriter = new ReportWriter(reportHelper, writeReport.toPath());
         log.info("Configured in {} ms", System.currentTimeMillis() - startedAt);
 
         folderReplacer.replace(FileLocation.forFile(folder));
         reportWriter.onReport(reportCollector.toReport());
 
-        zipRegistry.close();
         wordReplacer.saveGenerated(writeGeneratedReplacement.toPath());
 
         log.info("Processed in {} ms, Counters: {}", System.currentTimeMillis() - startedAt, new TreeMap<>(Stats.getCounters()));

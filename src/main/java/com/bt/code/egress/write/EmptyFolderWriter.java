@@ -1,5 +1,6 @@
 package com.bt.code.egress.write;
 
+import com.bt.code.egress.report.Stats;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.lingala.zip4j.ZipFile;
@@ -22,7 +23,6 @@ public class EmptyFolderWriter implements FileCompleted.Listener {
     private final Path root;
     private boolean inited;
     private boolean wasEmpty;
-    private final ZipRegistry zipRegistry;
 
     @Override
     public void onFileCompleted(FileCompleted fileCompleted) {
@@ -34,13 +34,11 @@ public class EmptyFolderWriter implements FileCompleted.Listener {
             } else {
                 write(fileCompleted.getFile().getFilePath(), fileCompleted.getReplacedLines());
             }
-            write(fileCompleted.getFile(), fileCompleted.getReplacedLines());
             Stats.fileChanged();
         }
         Stats.fileRead();
     }
 
-    private void write(String file, List<String> replacedLines) {
     public void write(Path file, List<String> replacedLines) {
         Path path = root.resolve(file);
         log.info("Save changed file to {}", path);

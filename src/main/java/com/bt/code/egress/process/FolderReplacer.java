@@ -22,8 +22,6 @@ public class FolderReplacer {
     private final WordGuardIgnoreMatcher fileMatcher;
     private final FileCompleted.Listener fileCompletedListener;
 
-    private final ZipRegistry zipRegistry;
-
     public void replace(FileLocation folder) {
         replace(folder, folder);
     }
