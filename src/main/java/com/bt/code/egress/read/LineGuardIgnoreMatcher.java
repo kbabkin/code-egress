@@ -4,9 +4,9 @@ import com.bt.code.egress.Config;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -15,26 +15,32 @@ public class LineGuardIgnoreMatcher implements LineMatcher {
     private final LineMatcher guardMatcher;
     private final WordMatcher ignoreMatcher;
 
-    public static LineGuardIgnoreMatcher fromConfigs(Config.MatchingGroups matchingGroups) {
-        LineMatcher guard = BasicLineMatcher.fromConfig(matchingGroups.getGuard());
-        WordMatcher ignore = BasicWordMatcher.fromConfig(matchingGroups.getIgnore());
+    public static LineGuardIgnoreMatcher fromConfigs(Config.MatchingMaps matchingMaps) {
+        LineMatcher guard = BasicLineMatcher.fromConfig(matchingMaps.getGuard());
+        WordMatcher ignore = BasicWordMatcher.fromConfig(matchingMaps.getIgnore()).patternPartOfWord();
         return new LineGuardIgnoreMatcher(guard, ignore);
     }
 
-    public static LineGuardIgnoreMatcher fromConfigsOptimized(Config.MatchingGroups matchingGroups) {
-        Config.ValuesAndPatterns guardVnP = Config.ValuesAndPatterns.fromConfig(matchingGroups.getGuard());
-        Map<Boolean, List<String>> byWholeWord = guardVnP.getValues().stream()
-                .collect(Collectors.partitioningBy(w -> {
+    public static LineGuardIgnoreMatcher fromConfigsOptimized(Config.MatchingMaps matchingMaps) {
+        Config.MatchingMap.ValuesAndPatternsMap guardVnP = matchingMaps.getGuard().load();
+        Set<String> wholeWords = guardVnP.getValues().keySet().stream()
+                .filter(w -> {
                     for (int i = 0; i < w.length(); i++) {
                         if (!LineToken.isAlphanumeric(w.codePointAt(i))) {
                             return false;
                         }
                     }
                     return true;
-                }));
-        LineMatcher guard = new BasicLineMatcher(new HashSet<>(byWholeWord.get(false)), guardVnP.getPatterns())
-                .and(new LineTokenMatcher(new BasicWordMatcher(new HashSet<>(byWholeWord.get(true)), Collections.emptyList())));
-        WordMatcher ignore = BasicWordMatcher.fromConfig(matchingGroups.getIgnore());
+                })
+                .collect(Collectors.toSet());
+        HashMap<String, String> words = new HashMap<>(guardVnP.getValues());
+        words.keySet().retainAll(wholeWords);
+        HashMap<String, String> phrases = new HashMap<>(guardVnP.getValues());
+        phrases.keySet().removeAll(wholeWords);
+
+        LineMatcher guard = new BasicLineMatcher(phrases, guardVnP.getPatterns())
+                .and(new LineTokenMatcher(new BasicWordMatcher(words, Collections.emptyMap())));
+        WordMatcher ignore = BasicWordMatcher.fromConfig(matchingMaps.getIgnore()).patternPartOfWord();
         return new LineGuardIgnoreMatcher(guard, ignore);
     }
 
@@ -46,7 +52,7 @@ public class LineGuardIgnoreMatcher implements LineMatcher {
         }
         return matches.stream()
                 .filter(match -> {
-                    String ignoreReason = ignoreMatcher.getMatchReason(match.getLineToken().getWordLowerCase());
+                    WordMatch ignoreReason = ignoreMatcher.getWordMatch(match.getLineToken().getWordLowerCase());
                     if (ignoreReason == null) {
                         return true;
                     } else {

@@ -35,4 +35,8 @@ public class Stats {
     public void wordsMatched(int byValue) {
         increment("Words Matched", byValue);
     }
+
+    public void wordsFalsePositive(int byValue) {
+        increment("Words False Positive", byValue);
+    }
 }

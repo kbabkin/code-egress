@@ -7,7 +7,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -38,7 +43,10 @@ public class ReportMatcher {
         Optional<Boolean> optionalAllowed = reportLines.stream()
                 .filter(r -> {
                     String context = r.getContext();
-                    return StringUtils.isBlank(context) || context.equals(tokenContext);
+                    return StringUtils.isBlank(context) || context.equals(tokenContext)
+                            // ability to provide only part of context
+                            || tokenContext.length() > context.length() && context.length() > word.length() + 5
+                            && tokenContext.contains(context) && context.toLowerCase().contains(word);
                 })
                 .filter(r -> {
                     String file = r.getFile();

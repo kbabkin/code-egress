@@ -8,19 +8,19 @@ public class WordGuardIgnoreMatcher implements WordMatcher {
     private final WordMatcher guardMatcher;
     private final WordMatcher ignoreMatcher;
 
-    public static WordGuardIgnoreMatcher fromConfigs(Config.MatchingGroups matchingGroups) {
-        WordMatcher guard = BasicWordMatcher.fromConfig(matchingGroups.getGuard());
-        WordMatcher ignore = BasicWordMatcher.fromConfig(matchingGroups.getIgnore());
+    public static WordGuardIgnoreMatcher fromConfigs(Config.MatchingSets matchingSets) {
+        WordMatcher guard = BasicWordMatcher.fromConfig(matchingSets.getGuard());
+        WordMatcher ignore = BasicWordMatcher.fromConfig(matchingSets.getIgnore()).patternPartOfWord();
         return new WordGuardIgnoreMatcher(guard, ignore);
     }
 
     @Override
-    public String getMatchReason(String word) {
-        String matchReason = guardMatcher.getMatchReason(word);
-        if (matchReason != null) {
-            String ignoreReason = ignoreMatcher.getMatchReason(word);
+    public WordMatch getWordMatch(String word) {
+        WordMatch wordMatch = guardMatcher.getWordMatch(word);
+        if (wordMatch != null) {
+            WordMatch ignoreReason = ignoreMatcher.getWordMatch(word);
             if (ignoreReason == null) {
-                return matchReason;
+                return wordMatch;
             } else {
 //                        todo log or notify
             }

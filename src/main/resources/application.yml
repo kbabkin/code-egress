@@ -25,10 +25,12 @@ read:
 word:
   guard:
     values:
-      - "acme"
-      - "RuntimeException"
+      "acme": "testCompany"
+      "akka": ""
+      "RuntimeException": ""
     patterns:
-      - "\\w+@acme.\\w+"
+      "[\\w+@acme.\\w+]": "u{hash}@mail.local"
+      "[\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}]": "h{hash}.domain.local"
     valueFiles:
       - src/test/resources/config/word-guard-value.csv
     patternFiles:
@@ -42,10 +44,7 @@ word:
       - "simpsons"
 
 replace:
-  values:
-    "acme": "vvv1"
-  valueFiles:
-    - src/test/resources/config/word-guard-value.csv
+  defaultTemplate: "w{hash}"
 
 # Manual override for false-positives
 allow:
@@ -56,20 +55,18 @@ allow:
 csv:
   enabled: false
   files:
-    -
-      filename: accounts.csv
+    - filename: accounts.csv
       columns:
         replace:
-          "shortName" : "id"
-          "longName"  : "id"
+          "shortName": "id"
+          "longName": "id"
         clear:
           - "email"
           - "address"
-    -
-      filename: legalEntities.csv
+    - filename: legalEntities.csv
       columns:
         replace:
-          "CRDS_ID" : "id"
+          "CRDS_ID": "id"
         clear:
           - "description"
 
@@ -77,5 +74,3 @@ write:
   folder: target/replaced
   report: target/code-report.csv
   generatedReplacement: target/generated-replacement.csv
-
-#ignore-escalate

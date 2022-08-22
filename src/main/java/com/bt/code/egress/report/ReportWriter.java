@@ -33,5 +33,9 @@ public class ReportWriter implements Report.Listener {
         } catch (IOException e) {
             throw new RuntimeException("Failed to write status file " + reportFile, e);
         }
+        long count = reportLines.stream()
+                .filter(rl -> Boolean.TRUE.equals(rl.getAllow()))
+                .count();
+        Stats.wordsFalsePositive((int) count);
     }
 }

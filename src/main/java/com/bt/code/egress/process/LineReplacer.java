@@ -1,6 +1,10 @@
 package com.bt.code.egress.process;
 
-import com.bt.code.egress.read.*;
+import com.bt.code.egress.read.LineGuardIgnoreMatcher;
+import com.bt.code.egress.read.LineLocation;
+import com.bt.code.egress.read.LineToken;
+import com.bt.code.egress.read.ReportMatcher;
+import com.bt.code.egress.read.WordMatch;
 import com.bt.code.egress.report.Stats;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -49,7 +53,7 @@ public class LineReplacer {
             WordMatch wordMatch = matchParam.getWordMatch();
             LineToken lineToken = wordMatch.getLineToken();
 
-            String replacement = wordReplacer.replace(lineToken.getWordLowerCase());
+            String replacement = wordReplacer.replace(wordMatch);
             String comment = wordMatch.getReason();
             if (Boolean.TRUE.equals(matchParam.getAllowed())) {
                 comment = "Allowed, " + wordMatch.getReason() + ", Suggested " + replacement;

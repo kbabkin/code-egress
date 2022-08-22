@@ -1,53 +1,27 @@
 package com.bt.code.egress.process;
 
-import com.bt.code.egress.Config;
+import com.bt.code.egress.read.WordMatch;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
-import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.StringSubstitutor;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 
 @RequiredArgsConstructor
 @Slf4j
 public class WordReplacer {
-    private final Map<String, String> predefinedMap;
     private final Map<String, String> generatedMap = new HashMap<>();
-
-//    int num = 1; //todo init
-
-    public static WordReplacer fromConfig(Config.MapGroup mapGroup) {
-        return new WordReplacer(load(mapGroup.getValues(), mapGroup.getValueFiles()));
-    }
-
-    static Map<String, String> load(Map<String, String> plain, Set<String> files) {
-        Map<String, String> values = new HashMap<>(plain);
-        for (String file : files) {
-            try (BufferedReader bufferedReader = Files.newBufferedReader(Paths.get(file))) {
-                CSVParser records = CSVFormat.DEFAULT.parse(bufferedReader);
-                for (CSVRecord record : records) {
-                    String value = record.get(1);
-                    if (value != null && value.trim().length() > 0) {
-                        values.put(record.get(0), value);
-                    }
-                }
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to read config from file " + file, e);
-            }
-        }
-        return values;
-    }
+    private final String defaultTemplate;
 
     public void saveGenerated(Path generatedReplacementsPath) {
         if (generatedMap.isEmpty()) {
@@ -68,29 +42,26 @@ public class WordReplacer {
         }
     }
 
-    public String replace(String word) {
-//            return Optional.ofNullable(suggested)
-//                    .orElseGet(() -> predefinedMap.get(word))
-//                    .orElseGet(() -> generatedMap.get(word))
-//                    .orElseGet(this::generate);
-        String predefined = predefinedMap.get(word);
-        if (predefined != null) {
-            return predefined;
-        }
+    public String replace(WordMatch wordMatch) {
+        String word = wordMatch.getLineToken().getWordLowerCase();
         String generated = generatedMap.get(word);
         if (generated != null) {
             return generated;
         }
-        return generate(word);
+        String predefined = wordMatch.getTemplate();
+        String template = StringUtils.isBlank(predefined) ? defaultTemplate : predefined;
+        return generate(word, template);
     }
 
-    // todo hashcode?
-    // todo: by pattern
-    private String generate(String word) {
-//        String value = "w" + num++;
-        String value = "w" + Math.abs(word.hashCode());
-        generatedMap.put(word, value);
-        return value;
+    private String generate(String word, String template) {
+        StringSubstitutor substitutor = new StringSubstitutor(
+                Collections.singletonMap("hash", Math.abs(word.hashCode())),
+                "{", "}");
+        String generated = substitutor.replace(template);
+        if (!generated.equals(template)) {
+            generatedMap.put(word, generated);
+        }
+        return generated;
     }
 
 }

@@ -1,9 +1,11 @@
 package com.bt.code.egress.process;
 
 import com.bt.code.egress.read.WordGuardIgnoreMatcher;
+import com.bt.code.egress.read.WordMatch;
 import com.bt.code.egress.write.FileCompleted;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.lingala.zip4j.ZipFile;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -12,7 +14,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.stream.Stream;
-import net.lingala.zip4j.ZipFile;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -35,8 +36,8 @@ public class FolderReplacer {
                 FileLocation relativeFile = rootFolder.relativize(file);
 
                 String name = file.getFilePath().getFileName().toString().toLowerCase();
-                String matchReason = fileMatcher.getMatchReason(name);
-                if (matchReason == null) {
+                WordMatch wordMatch = fileMatcher.getWordMatch(name);
+                if (wordMatch == null) {
                     //todo log ignore
                     log.info("Ignore file: {}", relativeFile);
                     return;
@@ -71,7 +72,7 @@ public class FolderReplacer {
         }
     }
 
-    private void processZip(Path file, Path relativeFile, boolean createBackup, boolean unpack)  {
+    private void processZip(Path file, Path relativeFile, boolean createBackup, boolean unpack) {
         log.info("Processing ZIP file: {}", file);
 
         //Maybe we will need backups in 'override' tool mode, skipping in 'empty folder' mode
@@ -96,8 +97,9 @@ public class FolderReplacer {
             String targetDir = file + ".unzip";
             try {
                 Files.createDirectories(Paths.get(targetDir));
-                (new ZipFile(file.toFile()))
-                        .extractAll(targetDir);
+                try (ZipFile zipFile = new ZipFile(file.toFile())) {
+                    zipFile.extractAll(targetDir);
+                }
             } catch (IOException e) {
                 log.error("Could not create folder {} with unpacked content for {}", targetDir, file, e);
             }

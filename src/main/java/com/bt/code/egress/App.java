@@ -43,6 +43,8 @@ public class App implements ApplicationRunner {
     File writeReport;
     @Value("${write.generatedReplacement}")
     File writeGeneratedReplacement;
+    @Value("${replace.defaultTemplate}")
+    String replaceDefaultTemplate;
 
     @Autowired
     Config config;
@@ -54,7 +56,7 @@ public class App implements ApplicationRunner {
         LineGuardIgnoreMatcher lineMatcher = LineGuardIgnoreMatcher.fromConfigsOptimized(config.word);
         ReportHelper reportHelper = new ReportHelper(15);
         ReportMatcher reportMatcher = ReportMatcher.fromConfigs(reportHelper, config.getAllow().getReportFiles());
-        WordReplacer wordReplacer = WordReplacer.fromConfig(config.replace);
+        WordReplacer wordReplacer = new WordReplacer(replaceDefaultTemplate);
         LineReplacer lineReplacer = new LineReplacer(lineMatcher, reportMatcher, wordReplacer);
         ReportCollector reportCollector = new ReportCollector(reportHelper);
         FileReplacer fileReplacer = new FileReplacer(lineReplacer, reportCollector);
