@@ -18,14 +18,14 @@ public class FileReplacer {
     private final LineReplacer lineReplacer;
     private final TextMatched.Listener textMatchedListener;
 
-    public FileCompleted replace(Path file, BufferedReader bufferedReader) throws IOException {
+    public FileCompleted replace(FileLocation file, BufferedReader bufferedReader) throws IOException {
         log.info("Read file: {}", file);
         String line;
         int lineNum = 0;
         ArrayList<String> originalLines = new ArrayList<>();
         List<String> replacedLines = new ArrayList<>();
         while (((line = bufferedReader.readLine()) != null)) {
-            String replace = lineReplacer.replace(line, new LineLocation(file.toString(), ++lineNum), textMatchedListener);
+            String replace = lineReplacer.replace(line, new LineLocation(file.toReportedPath(), ++lineNum), textMatchedListener);
             originalLines.add(line);
             replacedLines.add(replace);
         }

@@ -1,6 +1,7 @@
 package com.bt.code.egress;
 
 import com.bt.code.egress.process.CsvFileReplacer;
+import com.bt.code.egress.process.FileLocation;
 import com.bt.code.egress.process.FileReplacer;
 import com.bt.code.egress.process.FolderReplacer;
 import com.bt.code.egress.process.LineReplacer;
@@ -58,7 +59,7 @@ public class App implements ApplicationRunner {
         FolderReplacer folderReplacer = new FolderReplacer(fileReplacer, csvFileReplacer, fileMatcher, fileCompletedListener, zipRegistry);
         ReportWriter reportWriter = new ReportWriter(reportHelper, writeReport.toPath());
 
-        folderReplacer.replace(folder.toPath());
+        folderReplacer.replace(FileLocation.forFile(folder));
         reportWriter.onReport(reportCollector.toReport());
 
         zipRegistry.close();

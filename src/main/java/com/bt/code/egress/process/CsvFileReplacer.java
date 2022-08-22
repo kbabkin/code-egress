@@ -35,25 +35,25 @@ public class CsvFileReplacer {
         return csvConfig.getEnabled();
     }
 
-    public FileCompleted replace(Path path) throws IOException {
-        List<String> originalLines = Files.readAllLines(path);
-        String filename = path.getFileName().toString();
+    public FileCompleted replace(FileLocation file) throws IOException {
+        List<String> originalLines = Files.readAllLines(file.getFilePath());
+        String filename = file.getFilename();
 
         Config.CsvFileDescriptor fileDescriptor = csvConfig.get(filename);
         if (fileDescriptor == null) {
             log.warn("Ineligible CSV file {}, skipping", filename);
-            return new FileCompleted(path, originalLines, originalLines);
+            return new FileCompleted(file, originalLines, originalLines);
         }
 
         List<String[]> contents = Lists.newArrayList();
-        try (BufferedReader bufferedReader = Files.newBufferedReader(path);
+        try (BufferedReader bufferedReader = Files.newBufferedReader(file.getFilePath());
              CSVReader csvReader = new CSVReader(bufferedReader)) {
             contents = csvReader.readAll();
         }
 
         if (CollectionUtils.isEmpty(contents)) {
             log.warn("Empty CSV file {}, skipping", filename);
-            return new FileCompleted(path, originalLines, originalLines);
+            return new FileCompleted(file, originalLines, originalLines);
         }
 
         String[] header = contents.get(0);
@@ -96,7 +96,7 @@ public class CsvFileReplacer {
         try (StringWriter sw = new StringWriter();
              CSVWriter writer = new CSVWriter(sw)) {
             writer.writeAll(contents);
-            return new FileCompleted(path, originalLines, Arrays.asList(sw.toString().split("\\n")));
+            return new FileCompleted(file, originalLines, Arrays.asList(sw.toString().split("\\n")));
         }
     }
 

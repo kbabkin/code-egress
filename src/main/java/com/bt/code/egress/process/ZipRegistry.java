@@ -17,7 +17,7 @@ public class ZipRegistry {
     private List<ZipRegistryItem> items = Lists.newArrayList();
 
     public Path register(Path zipPath, Path relativeZipPath) throws IOException {
-        FileSystem zipFileSystem = FileSystems.newFileSystem(zipPath, null);
+        FileSystem zipFileSystem = FileSystems.newFileSystem(zipPath, (ClassLoader)null);
         Path rootInsideZip = zipFileSystem.getPath("/");
         items.add(new ZipRegistryItem(zipFileSystem, zipPath, relativeZipPath, rootInsideZip));
         return rootInsideZip;

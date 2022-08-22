@@ -25,11 +25,11 @@ public class EmptyFolderWriter implements FileCompleted.Listener {
     @Override
     public void onFileCompleted(FileCompleted fileCompleted) {
         if (fileCompleted.isChanged()) {
-            ZipRegistry.ZipRegistryItem relatedZip = zipRegistry.findRelatedZip(fileCompleted.getFile());
-            if (relatedZip == null) {
-                write(fileCompleted.getFile(), fileCompleted.getReplacedLines());
+            if (fileCompleted.getFile().isInsideZip()) {
+                writeIntoZip(fileCompleted.getFile().getRelativeZipPath(),
+                        fileCompleted.getFile().getFilePath(), fileCompleted.getReplacedLines());
             } else {
-                writeIntoZip(relatedZip.getRelativeZipPath(), fileCompleted.getFile(), fileCompleted.getReplacedLines());
+                write(fileCompleted.getFile().getFilePath(), fileCompleted.getReplacedLines());
             }
         }
     }

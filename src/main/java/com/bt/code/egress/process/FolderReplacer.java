@@ -24,35 +24,35 @@ public class FolderReplacer {
 
     private final ZipRegistry zipRegistry;
 
-    public void replace(Path folder) {
+    public void replace(FileLocation folder) {
         replace(folder, folder);
     }
 
-    void replace(Path folder, Path rootFolder) {
-        if (!Files.isDirectory(folder)) {
+    void replace(FileLocation folder, FileLocation rootFolder) {
+        if (!Files.isDirectory(folder.getFilePath())) {
             throw new RuntimeException("Not a folder: " + folder);
         }
-        try (Stream<Path> files = Files.list(folder)) {
+        try (Stream<FileLocation> files = folder.list()) {
             files.forEach(file -> {
-                Path relativeFile = rootFolder.relativize(file);
+                FileLocation relativeFile = rootFolder.relativize(file);
 
-                String name = file.getFileName().toString().toLowerCase();
+                String name = file.getFilePath().getFileName().toString().toLowerCase();
                 String matchReason = fileMatcher.getMatchReason(name);
                 if (matchReason == null) {
                     //todo log ignore
                     log.info("Ignore file: {}", relativeFile);
                     return;
                 }
-                if (Files.isDirectory(file)) {
+                if (Files.isDirectory(file.getFilePath())) {
                     replace(file, rootFolder);
-                } else if (isZipFile(file)) {
-                    processZip(file, relativeFile, false, false);
+                } else if (isZipFile(file.getFilePath())) {
+                    processZip(file.getFilePath(), relativeFile.getFilePath(), false, false);
                 } else {
                     //we need csv replacer then regular replacer (or visa versa -) )
                     //TODO create a chain of 2 replacers
                     if (csvFileReplacer.isEnabled()) {
                         try {
-                            if (csvFileReplacer.isEligibleForReplacement(file.getFileName().toString())) {
+                            if (csvFileReplacer.isEligibleForReplacement(file.getFilename())) {
                                 FileCompleted fileCompleted = csvFileReplacer.replace(file);
                                 fileCompletedListener.onFileCompleted(fileCompleted);
                             }
@@ -61,7 +61,7 @@ public class FolderReplacer {
                         }
 
                     } else {
-                        try (BufferedReader bufferedReader = Files.newBufferedReader(file)) {
+                        try (BufferedReader bufferedReader = Files.newBufferedReader(file.getFilePath())) {
                             FileCompleted fileCompleted = fileReplacer.replace(relativeFile, bufferedReader);
                             fileCompletedListener.onFileCompleted(fileCompleted);
                         } catch (IOException e) {
@@ -70,8 +70,6 @@ public class FolderReplacer {
                     }
                 }
             });
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to process folder: " + folder, e);
         }
     }
 
@@ -87,12 +85,12 @@ public class FolderReplacer {
             }
         }
 
-        try  {
-            Path zipRoot = zipRegistry.register(file, relativeFile);
+        try (FileLocation zipRoot = FileLocation.forZipRoot(file, relativeFile)) {
             //Read and scan zip contents as it were unpacked, but take care of further writes
             replace(zipRoot);
-        } catch (IOException ie) {
-            throw new RuntimeException(String.format("Failed to process zip file: %s", file), ie);
+            //auto close zip in the end
+        } catch (Exception e) {
+            throw new RuntimeException(String.format("Failed to process zip file: %s", file), e);
         }
 
         //Maybe we will need unpacked contents in 'override' tool mode, skipping in 'empty folder' mode
