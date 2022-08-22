@@ -1,6 +1,7 @@
 package com.bt.code.egress.process;
 
 import com.bt.code.egress.read.*;
+import com.bt.code.egress.report.Stats;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ public class LineReplacer {
         if (rawMatches.isEmpty()) {
             return line;
         }
+        Stats.wordsMatched(rawMatches.size());
 
         List<MatchParam> matchParams = rawMatches.stream()
                 // reportMatcher can return null
@@ -48,15 +50,21 @@ public class LineReplacer {
             LineToken lineToken = wordMatch.getLineToken();
 
             String replacement = wordReplacer.replace(lineToken.getWordLowerCase());
-            if (!Boolean.TRUE.equals(matchParam.getAllowed()) && matchParam.getConflict() == null) {
+            String comment = wordMatch.getReason();
+            if (Boolean.TRUE.equals(matchParam.getAllowed())) {
+                comment = "Allowed, " + wordMatch.getReason() + ", Suggested " + replacement;
+                replacement = null;
+            } else if (matchParam.getConflict() != null) {
+                comment = "CONFLICT with " + matchParam.getConflict().getReason() + ", " + wordMatch.getReason() +
+                        ", Suggested " + replacement;
+                replacement = null;
+            } else {
                 String withBefore = line.substring(processedPos, lineToken.getStartPos()) + replacement;
                 processed = processed == null ? withBefore : processed + withBefore;
                 processedPos = lineToken.getEndPos();
+                Stats.wordReplaced();
             }
 
-            String comment = matchParam.getConflict() != null
-                    ? "CONFLICT with " + matchParam.getConflict().getReason() + ": " + wordMatch.getReason()
-                    : wordMatch.getReason();
             textMatchedListener.onMatched(new TextMatched(lineLocation, lineToken, matchParam.getAllowed(), replacement,
                     comment));
         }

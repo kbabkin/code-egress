@@ -1,6 +1,5 @@
 package com.bt.code.egress.write;
 
-import com.bt.code.egress.process.ZipRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.lingala.zip4j.ZipFile;
@@ -15,15 +14,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
+import java.util.stream.Stream;
 
 @RequiredArgsConstructor
 @Slf4j
 public class EmptyFolderWriter implements FileCompleted.Listener {
     private final Path root;
+    private boolean inited;
+    private boolean wasEmpty;
     private final ZipRegistry zipRegistry;
 
     @Override
     public void onFileCompleted(FileCompleted fileCompleted) {
+        init();
         if (fileCompleted.isChanged()) {
             if (fileCompleted.getFile().isInsideZip()) {
                 writeIntoZip(fileCompleted.getFile().getRelativeZipPath(),
@@ -31,9 +34,13 @@ public class EmptyFolderWriter implements FileCompleted.Listener {
             } else {
                 write(fileCompleted.getFile().getFilePath(), fileCompleted.getReplacedLines());
             }
+            write(fileCompleted.getFile(), fileCompleted.getReplacedLines());
+            Stats.fileChanged();
         }
+        Stats.fileRead();
     }
 
+    private void write(String file, List<String> replacedLines) {
     public void write(Path file, List<String> replacedLines) {
         Path path = root.resolve(file);
         log.info("Save changed file to {}", path);
@@ -86,6 +93,35 @@ public class EmptyFolderWriter implements FileCompleted.Listener {
             fos.close();
         } catch (IOException e) {
             throw new RuntimeException(String.format("Could not create empty zip %s", path));
+        }
+    }
+
+    private void init() {
+        if (inited) {
+            return;
+        }
+        try {
+            if (Files.exists(root)) {
+                try (Stream<Path> list = Files.list(root)) {
+                    long count = list.count();
+                    wasEmpty = count == 0;
+
+                }
+            } else {
+                Files.createDirectories(root);
+                wasEmpty = true;
+            }
+            inited = true;
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to use output folder " + root, e);
+        }
+
+    }
+
+    public void verify() {
+        init();
+        if (!wasEmpty) {
+            log.warn("!!!WARNING!!! write folder {} was not empty, it can contain files from previous scans!", root);
         }
     }
 }

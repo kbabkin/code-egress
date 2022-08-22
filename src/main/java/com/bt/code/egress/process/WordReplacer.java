@@ -2,19 +2,25 @@ package com.bt.code.egress.process;
 
 import com.bt.code.egress.Config;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 @RequiredArgsConstructor
+@Slf4j
 public class WordReplacer {
     private final Map<String, String> predefinedMap;
     private final Map<String, String> generatedMap = new HashMap<>();
@@ -41,6 +47,25 @@ public class WordReplacer {
             }
         }
         return values;
+    }
+
+    public void saveGenerated(Path generatedReplacementsPath) {
+        if (generatedMap.isEmpty()) {
+            log.info("No generated replacements");
+            return;
+        }
+
+        log.info("Writing {} generated replacements to {}", generatedMap.size(), generatedReplacementsPath);
+        TreeMap<String, String> sorted = new TreeMap<>(generatedMap);
+        try (BufferedWriter writer = Files.newBufferedWriter(generatedReplacementsPath)) {
+            try (CSVPrinter printer = new CSVPrinter(writer, CSVFormat.DEFAULT)) {
+                for (Map.Entry<String, String> entry : sorted.entrySet()) {
+                    printer.printRecord(entry.getKey(), entry.getValue());
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to write generated replacements to " + generatedReplacementsPath, e);
+        }
     }
 
     public String replace(String word) {

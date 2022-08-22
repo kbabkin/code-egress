@@ -20,11 +20,11 @@ public class BasicWordMatcher implements WordMatcher {
     @Override
     public String getMatchReason(String word) {
         if (values.contains(word)) {
-            return "Exact match: " + word;
+            return "Value " + word;
         }
         for (Pattern pattern : patterns) {
             if (pattern.matcher(word).matches()) {
-                return "Pattern match: " + pattern;
+                return "Pattern " + pattern;
             }
         }
         return null;

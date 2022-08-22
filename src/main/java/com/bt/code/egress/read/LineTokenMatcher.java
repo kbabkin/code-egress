@@ -30,7 +30,7 @@ public class LineTokenMatcher implements LineMatcher {
         String line = lineToken.getLine();
         int startPos = lineToken.getEndPos();
 
-        while (startPos < line.length() && !lineToken.isAlphabetic(startPos)) {
+        while (startPos < line.length() && !lineToken.isAlphanumericAt(startPos)) {
             startPos++;
         }
         if (startPos >= line.length()) {
@@ -38,7 +38,7 @@ public class LineTokenMatcher implements LineMatcher {
         }
 
         int endPos = startPos + 1;
-        while (endPos < line.length() && lineToken.isAlphabetic(endPos)) {
+        while (endPos < line.length() && lineToken.isAlphanumericAt(endPos)) {
             endPos++;
         }
         return new LineToken(line, startPos, endPos);
