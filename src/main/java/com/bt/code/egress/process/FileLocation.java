@@ -25,6 +25,11 @@ public class FileLocation implements AutoCloseable {
     private Path relativeZipPath;
     private Path rootInsideZip;
 
+    @Override
+    public String toString() {
+        return toReportedPath();
+    }
+
     public String toReportedPath() {
         if (!isInsideZip()) {
             return filePath.toString();
@@ -41,7 +46,7 @@ public class FileLocation implements AutoCloseable {
                         .filePath(p)
                         .zipFileSystem(zipFileSystem)
                         .zipPath(zipPath)
-                        .relativeZipPath(p.relativize(rootInsideZip))
+                        .relativeZipPath(relativeZipPath)
                         .rootInsideZip(rootInsideZip)
                         .build());
 
