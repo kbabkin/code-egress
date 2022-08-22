@@ -13,6 +13,13 @@ read:
     patterns:
       - ".*\\.unzip"
       - ".*\\.class"
+      - ".*\\.jpg"
+      - ".*\\.png"
+      - ".*\\.ico"
+      - ".*\\.mp4"
+      - ".*\\.rpm"
+      - ".*\\.exe"
+      - ".*\\.pyc"
       - "\\.attach_pid.*"
 
 word:
