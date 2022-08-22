@@ -13,7 +13,13 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -27,6 +33,7 @@ public class Config {
     MatchingGroups word = new MatchingGroups();
     MapGroup replace = new MapGroup();
     Allow allow = new Allow();
+    CsvReplacementConfig csv = new CsvReplacementConfig();
 
     @Data
     public static class MatchingGroups {
@@ -85,4 +92,29 @@ public class Config {
 
     }
 
+
+    @Data
+    public static class CsvReplacementConfig {
+        Boolean enabled;
+        List<CsvFileDescriptor> files;
+
+        public boolean includes(String filename) {
+            return files.stream().anyMatch(f -> f.getFilename().equals(filename));
+        }
+        public CsvFileDescriptor get(String filename) {
+            return files.stream().filter(f -> f.getFilename().equals(filename)).findFirst().orElse(null);
+        }
+    }
+
+    @Data
+    public static class CsvFileDescriptor {
+        String filename;
+        Columns columns;
+    }
+
+    @Data
+    public static class Columns {
+        Map<String, String> replace = new LinkedHashMap<>();
+        List<String> clear = new ArrayList<>();
+    }
 }

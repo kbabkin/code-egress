@@ -1,12 +1,14 @@
 package com.bt.code.egress.write;
 
+import com.bt.code.egress.process.FileLocation;
 import lombok.Value;
 
+import java.nio.file.Path;
 import java.util.List;
 
 @Value
 public class FileCompleted {
-    String file;
+    FileLocation file;
     List<String> originalLines;
     List<String> replacedLines;
 

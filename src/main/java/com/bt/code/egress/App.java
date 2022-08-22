@@ -1,5 +1,7 @@
 package com.bt.code.egress;
 
+import com.bt.code.egress.process.CsvFileReplacer;
+import com.bt.code.egress.process.FileLocation;
 import com.bt.code.egress.process.FileReplacer;
 import com.bt.code.egress.process.FolderReplacer;
 import com.bt.code.egress.process.LineReplacer;
@@ -57,12 +59,14 @@ public class App implements ApplicationRunner {
         ReportCollector reportCollector = new ReportCollector(reportHelper);
         FileReplacer fileReplacer = new FileReplacer(lineReplacer, reportCollector);
         EmptyFolderWriter fileCompletedListener = new EmptyFolderWriter(writeFolder.toPath());
-        FolderReplacer folderReplacer = new FolderReplacer(fileReplacer, fileMatcher, fileCompletedListener);
+        CsvFileReplacer csvFileReplacer = new CsvFileReplacer(config.csv);
+        FolderReplacer folderReplacer = new FolderReplacer(fileReplacer, csvFileReplacer, fileMatcher, fileCompletedListener);
         ReportWriter reportWriter = new ReportWriter(reportHelper, writeReport.toPath());
         log.info("Configured in {} ms", System.currentTimeMillis() - startedAt);
 
-        folderReplacer.replace(folder.toPath());
+        folderReplacer.replace(FileLocation.forFile(folder));
         reportWriter.onReport(reportCollector.toReport());
+
         wordReplacer.saveGenerated(writeGeneratedReplacement.toPath());
 
         log.info("Processed in {} ms, Counters: {}", System.currentTimeMillis() - startedAt, new TreeMap<>(Stats.getCounters()));

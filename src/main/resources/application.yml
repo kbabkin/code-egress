@@ -53,6 +53,26 @@ allow:
     - src/test/resources/config/allow-report.csv
     - target/code-report.csv # results from previous run, overridden after rerun, so manual changes in it can be lost
 
+csv:
+  enabled: false
+  files:
+    -
+      filename: accounts.csv
+      columns:
+        replace:
+          "shortName" : "id"
+          "longName"  : "id"
+        clear:
+          - "email"
+          - "address"
+    -
+      filename: legalEntities.csv
+      columns:
+        replace:
+          "CRDS_ID" : "id"
+        clear:
+          - "description"
+
 write:
   folder: target/replaced
   report: target/code-report.csv
