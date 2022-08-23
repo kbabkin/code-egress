@@ -28,6 +28,14 @@ public class Stats {
         increment("Files Changed");
     }
 
+    public void fileIgnored() {
+        increment("Ignored Files");
+    }
+
+    public void folderIgnored() {
+        increment("Ignored Folders");
+    }
+
     public void wordReplaced() {
         increment("Words Replaced");
     }

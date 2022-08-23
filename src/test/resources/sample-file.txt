@@ -6,4 +6,4 @@ ending with acme
 acme and also one more acme
 part of wordACME
 who wins? match@acme.com
-check ip 192.169.10.11
+check ip 192.168.10.11

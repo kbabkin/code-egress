@@ -3,34 +3,30 @@ read:
   folder: "/work/project/scanned-sample"
 
   guard:
-    # exact file names to include in scan
-    values: [ ]
-    # file name patterns to include in scan
-    patterns:
-      - ".*"
-    valueFiles: []
-    patternFiles: []
-  ignore:
-    # exact file/folder names to exclude from scan
+    # file folder (ending with '/') and file name patterns to include in scan
+    # wildcards: https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/util/AntPathMatcher.html
     values:
-      - "target"
-      - ".git"
-      - ".idea"
-      - "code-report.csv"
-    # file name patterns to exclude from scan
-    patterns:
-      - ".*\\.unzip"
-      - ".*\\.class"
-      - ".*\\.jpg"
-      - ".*\\.png"
-      - ".*\\.ico"
-      - ".*\\.mp4"
-      - ".*\\.rpm"
-      - ".*\\.exe"
-      - ".*\\.pyc"
-      - "\\.attach_pid.*"
-    valueFiles: []
-    patternFiles: []
+      - "**/*/"
+      - "**/*"
+    valuesFiles: []
+  ignore:
+    # file folder and file name patterns to exclude from scan
+    values:
+      - "**/.git/"
+      - "**/.idea/"
+      - "**/target/"
+      - "**/*.unzip/"
+      - "**/*.class"
+      - "**/*.exe"
+      - "**/*.ico"
+      - "**/*.jpg"
+      - "**/*.mp4"
+      - "**/*.png"
+      - "**/*.pyc"
+      - "**/*.rpm"
+      - "**/code-report.csv"
+      - "**/.attach_pid*"
+    valuesFiles: []
 
 word:
   guard:
@@ -53,6 +49,7 @@ word:
     values:
       - "localhost"
       - "127.0.0.1"
+      - "0.0.0.0"
     patterns: # ignore pattern is searched, use ^..$ to match complete word
       - "simpsons"
     valueFiles: []

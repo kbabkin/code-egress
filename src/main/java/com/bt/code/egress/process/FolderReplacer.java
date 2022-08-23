@@ -1,7 +1,7 @@
 package com.bt.code.egress.process;
 
-import com.bt.code.egress.read.WordGuardIgnoreMatcher;
-import com.bt.code.egress.read.WordMatch;
+import com.bt.code.egress.read.FilePathMatcher;
+import com.bt.code.egress.report.Stats;
 import com.bt.code.egress.write.FileCompleted;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +20,7 @@ import java.util.stream.Stream;
 public class FolderReplacer {
     private final FileReplacer fileReplacer;
     private final CsvFileReplacer csvFileReplacer;
-    private final WordGuardIgnoreMatcher fileMatcher;
+    private final FilePathMatcher filePathMatcher;
     private final FileCompleted.Listener fileCompletedListener;
 
     public void replace(FileLocation folder) {
@@ -35,16 +35,22 @@ public class FolderReplacer {
             files.forEach(file -> {
                 FileLocation relativeFile = rootFolder.relativize(file);
 
-                String name = file.getFilePath().getFileName().toString().toLowerCase();
-                WordMatch wordMatch = fileMatcher.getWordMatch(name);
-                if (wordMatch == null) {
-                    //todo log ignore
-                    log.info("Ignore file: {}", relativeFile);
+                String name = relativeFile.toString().toLowerCase();
+                if (Files.isDirectory(file.getFilePath())) {
+                    if (filePathMatcher.match(name + "/")) {
+                        replace(file, rootFolder);
+                    } else {
+                        log.info("Ignore folder: {}", relativeFile);
+                        Stats.folderIgnored();
+                    }
                     return;
                 }
-                if (Files.isDirectory(file.getFilePath())) {
-                    replace(file, rootFolder);
-                } else if (isZipFile(file.getFilePath())) {
+                if (!filePathMatcher.match(name)) {
+                    log.info("Ignore file: {}", relativeFile);
+                    Stats.fileIgnored();
+                    return;
+                }
+                if (isZipFile(file.getFilePath())) {
                     processZip(file.getFilePath(), relativeFile.getFilePath(), false, false);
                 } else {
                     //we need csv replacer then regular replacer (or visa versa -) )

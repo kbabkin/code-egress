@@ -6,9 +6,9 @@ import com.bt.code.egress.process.FileReplacer;
 import com.bt.code.egress.process.FolderReplacer;
 import com.bt.code.egress.process.LineReplacer;
 import com.bt.code.egress.process.WordReplacer;
+import com.bt.code.egress.read.FilePathMatcher;
 import com.bt.code.egress.read.LineGuardIgnoreMatcher;
 import com.bt.code.egress.read.ReportMatcher;
-import com.bt.code.egress.read.WordGuardIgnoreMatcher;
 import com.bt.code.egress.report.ReportCollector;
 import com.bt.code.egress.report.ReportHelper;
 import com.bt.code.egress.report.ReportWriter;
@@ -25,6 +25,7 @@ import org.springframework.context.annotation.Import;
 
 import java.io.File;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 @SpringBootApplication
 @Import(Config.class)
@@ -45,14 +46,21 @@ public class App implements ApplicationRunner {
     File writeGeneratedReplacement;
     @Value("${replace.defaultTemplate}")
     String replaceDefaultTemplate;
+    @Value("${scan.project}")
+    String scanProject;
+    @Value("${scan.config}")
+    String scanConfig;
 
     @Autowired
     Config config;
 
     @Override
     public void run(ApplicationArguments args) {
+        log.info("Scan project: {}, config: {}", scanProject, scanConfig);
+        log.info("Scanning folder: {}", folder);
+
         long startedAt = System.currentTimeMillis();
-        WordGuardIgnoreMatcher fileMatcher = WordGuardIgnoreMatcher.fromConfigs(config.read);
+        FilePathMatcher filePathMatcher = FilePathMatcher.fromConfig(config.read);
         LineGuardIgnoreMatcher lineMatcher = LineGuardIgnoreMatcher.fromConfigsOptimized(config.word);
         ReportHelper reportHelper = new ReportHelper(15);
         ReportMatcher reportMatcher = ReportMatcher.fromConfigs(reportHelper, config.getAllow().getReportFiles());
@@ -62,7 +70,7 @@ public class App implements ApplicationRunner {
         FileReplacer fileReplacer = new FileReplacer(lineReplacer, reportCollector);
         EmptyFolderWriter fileCompletedListener = new EmptyFolderWriter(writeFolder.toPath());
         CsvFileReplacer csvFileReplacer = new CsvFileReplacer(config.csv);
-        FolderReplacer folderReplacer = new FolderReplacer(fileReplacer, csvFileReplacer, fileMatcher, fileCompletedListener);
+        FolderReplacer folderReplacer = new FolderReplacer(fileReplacer, csvFileReplacer, filePathMatcher, fileCompletedListener);
         ReportWriter reportWriter = new ReportWriter(reportHelper, writeReport.toPath());
         log.info("Configured in {} ms", System.currentTimeMillis() - startedAt);
 
@@ -71,7 +79,9 @@ public class App implements ApplicationRunner {
 
         wordReplacer.saveGenerated(writeGeneratedReplacement.toPath());
 
-        log.info("Processed in {} ms, Counters: {}", System.currentTimeMillis() - startedAt, new TreeMap<>(Stats.getCounters()));
+        log.info("Counters: \n\t{}", new TreeMap<>(Stats.getCounters()).entrySet().stream()
+                .map(String::valueOf).collect(Collectors.joining("\n\t")));
+        log.info("Processed in {} ms", System.currentTimeMillis() - startedAt);
         fileCompletedListener.verify();
     }
 }

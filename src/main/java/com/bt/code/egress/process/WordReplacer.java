@@ -1,6 +1,7 @@
 package com.bt.code.egress.process;
 
 import com.bt.code.egress.read.WordMatch;
+import com.bt.code.egress.report.Stats;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
@@ -29,7 +30,7 @@ public class WordReplacer {
             return;
         }
 
-        log.info("Writing {} generated replacements to {}", generatedMap.size(), generatedReplacementsPath);
+        log.info("Writing generated replacements to {}", generatedReplacementsPath);
         TreeMap<String, String> sorted = new TreeMap<>(generatedMap);
         try (BufferedWriter writer = Files.newBufferedWriter(generatedReplacementsPath)) {
             try (CSVPrinter printer = new CSVPrinter(writer, CSVFormat.DEFAULT)) {
@@ -40,6 +41,7 @@ public class WordReplacer {
         } catch (IOException e) {
             throw new RuntimeException("Failed to write generated replacements to " + generatedReplacementsPath, e);
         }
+        Stats.increment("Generated Replacements", generatedMap.size());
     }
 
     public String replace(WordMatch wordMatch) {

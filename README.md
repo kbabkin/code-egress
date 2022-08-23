@@ -20,17 +20,16 @@ Maintain consistent results among multiple sequential scans and pre-release scan
 Report contains violations of configured rules, one per line in CSV format.
 File can be viewed and edited by IDE plugin, Excel, plain text editor.
 
+Example row:
+
+| Allow | Text           | Context                 | File | Line | Replacement | Comment                 |
+|-------|----------------|-------------------------|------|------|-------------|-------------------------|
+|       | 192.168.10.11 | check ip 192.168.10.11 | src/test/resources/sample-file.txt | 9 | h1163712847.domain.local | Pattern \d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3} |
+
 Set colum **"Allow"** value to mark violation for following scans and cleanup:
 - **"true"** - marks violation as false-positive to be excluded from replacement. Values "yes", "y", "1" are also accepted.
 - **"false"** - reviewed, true-positive, not allowed, will be replaced. Value is kept in next scan, used to differentiate reviewed and not reviewed lines.
 - empty value - not allowed, not reviewed, will be replaced.
-
-Example row:
-
-| Allow | Text | Context | File | Line | Replacement | Comment                 |
-|-------|------|---------|------|------|-------------|-------------------------|
-|       | 192.169.10.11 | check ip 192.169.10.11 | src/test/resources/sample-file.txt | 9 | h1163712847.domain.local | Pattern \d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3} |
-
 
 ## Configuration
 Check [src/main/resources/application.yml](src/main/resources/application.yml) and [scan-project/sample/config/scan-application.yml](scan-project/sample/config/scan-application.yml)
