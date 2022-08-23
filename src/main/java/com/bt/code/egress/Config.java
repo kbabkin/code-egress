@@ -128,7 +128,7 @@ public class Config {
             Map<String, String> values = new HashMap<>(plain);
             for (String file : files) {
                 try (BufferedReader bufferedReader = Files.newBufferedReader(Paths.get(file))) {
-                    CSVParser records = CSVFormat.DEFAULT.parse(bufferedReader);
+                    CSVParser records = CSVFormat.DEFAULT.withCommentMarker('#').parse(bufferedReader);
                     for (CSVRecord record : records) {
                         String key = record.get(0);
                         String value = record.size() > 1 ? record.get(1) : "";

@@ -1,0 +1,70 @@
+read:
+  folder: "."
+  guard:
+    values:
+    patterns:
+      - ".*"
+  ignore:
+    values:
+      - "target"
+      - ".git"
+      - ".idea"
+      - "code-report.csv"
+    patterns:
+      - ".*\\.unzip"
+      - ".*\\.class"
+      - ".*\\.jpg"
+      - ".*\\.png"
+      - ".*\\.ico"
+      - ".*\\.mp4"
+      - ".*\\.rpm"
+      - ".*\\.exe"
+      - ".*\\.pyc"
+      - "\\.attach_pid.*"
+
+word:
+  guard:
+    values:
+      "acme": "testCompany"
+      "akka": ""
+    patterns:
+      "[\\w+@acme.\\w+]": "u{hash}@mail.local"
+      "[\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}]": "h{hash}.domain.local"
+    valueFiles:
+      - "${scan.config}/word-guard-value.csv"
+    patternFiles:
+      - "${scan.config}/word-guard-pattern.csv"
+
+  ignore:
+    values:
+      - "localhost"
+      - "127.0.0.1"
+    patterns: # ignore pattern is searched, use ^..$ to match complete word
+      - "simpsons"
+
+replace:
+  defaultTemplate: "w{hash}"
+
+# Manual override for false-positives
+allow:
+  reportFiles:
+    - ${scan.config}/allow-report.csv
+    - ${write.report} # results from previous run, overridden after rerun, so manual changes in it can be lost
+
+csv:
+  enabled: false
+  files:
+    - filename: accounts.csv
+      columns:
+        replace:
+          "shortName": "id"
+          "longName": "id"
+        clear:
+          - "email"
+          - "address"
+    - filename: legalEntities.csv
+      columns:
+        replace:
+          "CRDS_ID": "id"
+        clear:
+          - "description"

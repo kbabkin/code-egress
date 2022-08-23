@@ -28,8 +28,11 @@ public class ReportWriter implements Report.Listener {
         log.info("Writing status file: {}", reportFile);
         List<Report.ReportLine> reportLines = new ArrayList<>(report.getReportLines());
         reportLines.sort(WRITE_ORDER);
-        try (BufferedWriter writer = Files.newBufferedWriter(reportFile)) {
-            reportHelper.write(writer, reportLines);
+        try {
+            Files.createDirectories(reportFile.getParent());
+            try (BufferedWriter writer = Files.newBufferedWriter(reportFile)) {
+                reportHelper.write(writer, reportLines);
+            }
         } catch (IOException e) {
             throw new RuntimeException("Failed to write status file " + reportFile, e);
         }

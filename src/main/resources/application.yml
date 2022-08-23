@@ -1,76 +1,16 @@
-read:
-  folder: "."
-  guard:
-    values:
-    patterns:
-      - ".*"
-  ignore:
-    values:
-      - "target"
-      - ".git"
-      - ".idea"
-      - "code-report.csv"
-    patterns:
-      - ".*\\.unzip"
-      - ".*\\.class"
-      - ".*\\.jpg"
-      - ".*\\.png"
-      - ".*\\.ico"
-      - ".*\\.mp4"
-      - ".*\\.rpm"
-      - ".*\\.exe"
-      - ".*\\.pyc"
-      - "\\.attach_pid.*"
+spring:
+  config:
+    import: "file:${scan.config}/scan-application.yml"
 
-word:
-  guard:
-    values:
-      "acme": "testCompany"
-      "akka": ""
-      "RuntimeException": ""
-    patterns:
-      "[\\w+@acme.\\w+]": "u{hash}@mail.local"
-      "[\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}]": "h{hash}.domain.local"
-    valueFiles:
-      - src/test/resources/config/word-guard-value.csv
-    patternFiles:
-      - src/test/resources/config/word-guard-pattern.csv
-
-  ignore:
-    values:
-      - "localhost"
-      - "127.0.0.1"
-    patterns: # ignore pattern is searched, use ^..$ to match complete word
-      - "simpsons"
+scan:
+  # sample value, should be overridden in Spring command line properties, e.g. -Dscan.project=/work/project/scan-sample
+  project: scan-project/sample
+  config: "${scan.project}/config"
 
 replace:
   defaultTemplate: "w{hash}"
 
-# Manual override for false-positives
-allow:
-  reportFiles:
-    - src/test/resources/config/allow-report.csv
-    - target/code-report.csv # results from previous run, overridden after rerun, so manual changes in it can be lost
-
-csv:
-  enabled: false
-  files:
-    - filename: accounts.csv
-      columns:
-        replace:
-          "shortName": "id"
-          "longName": "id"
-        clear:
-          - "email"
-          - "address"
-    - filename: legalEntities.csv
-      columns:
-        replace:
-          "CRDS_ID": "id"
-        clear:
-          - "description"
-
 write:
-  folder: target/replaced
-  report: target/code-report.csv
-  generatedReplacement: target/generated-replacement.csv
+  folder: ${scan.project}/target/preview
+  report: ${scan.project}/target/code-report.csv
+  generatedReplacement: ${scan.project}/target/generated-replacement.csv

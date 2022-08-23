@@ -1,0 +1,81 @@
+read:
+  # !!! Project folder to be scanned - provide actual value !!!
+  folder: "/work/project/scanned-sample"
+
+  guard:
+    # exact file names to include in scan
+    values: [ ]
+    # file name patterns to include in scan
+    patterns:
+      - ".*"
+    valueFiles: []
+    patternFiles: []
+  ignore:
+    # exact file/folder names to exclude from scan
+    values:
+      - "target"
+      - ".git"
+      - ".idea"
+      - "code-report.csv"
+    # file name patterns to exclude from scan
+    patterns:
+      - ".*\\.unzip"
+      - ".*\\.class"
+      - ".*\\.jpg"
+      - ".*\\.png"
+      - ".*\\.ico"
+      - ".*\\.mp4"
+      - ".*\\.rpm"
+      - ".*\\.exe"
+      - ".*\\.pyc"
+      - "\\.attach_pid.*"
+    valueFiles: []
+    patternFiles: []
+
+word:
+  guard:
+    values: { }
+    ## Mappings of "from" and "to" word replacements. "To" can be empty, will be generated. Examples:
+    # "acme": "testCompany"
+    # "akka": ""
+    patterns:
+      ## Mappings of "from" and "to" pattern replacements. "To" can contain template variables, can be empty.
+      "[\\w+@\\w+(.\\w+)+]": "u{hash}@mail.local"
+      "[\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}]": "h{hash}.domain.local"
+    valueFiles:
+      # Long list of words can be extracted to separate files in config folder
+      - "${scan.config}/word-guard-value.csv"
+    patternFiles:
+      # Long list of patterns can be extracted to separate files in config folder
+      - "${scan.config}/word-guard-pattern.csv"
+
+  ignore:
+    values:
+      - "localhost"
+      - "127.0.0.1"
+    patterns: # ignore pattern is searched, use ^..$ to match complete word
+      - "simpsons"
+    valueFiles: []
+    patternFiles: []
+
+
+# Manual override for false-positives
+allow:
+  reportFiles:
+    - ${scan.config}/allow-report.csv # collect false-positives in config folder, can be copy-pasted from report
+    - ${write.report} # results from previous run, overridden after rerun, cleaned by maven, so manual changes in it can be lost
+
+csv:
+  enabled: false
+  files: [ ]
+## CSV configuration per file type
+## File type means same file name in different folders
+#    - filename: accounts.csv
+## Columns to replace/clear
+#      columns:
+#        replace:
+#          "shortName": "id"
+#          "longName": "id"
+#        clear:
+#          - "email"
+#          - "address"
