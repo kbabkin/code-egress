@@ -14,6 +14,7 @@ import com.bt.code.egress.report.ReportHelper;
 import com.bt.code.egress.report.ReportWriter;
 import com.bt.code.egress.report.Stats;
 import com.bt.code.egress.write.EmptyFolderWriter;
+import com.bt.code.egress.write.FolderWriter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,6 +39,8 @@ public class App implements ApplicationRunner {
     // Path(".") was resolved as target/classes
     @Value("${read.folder}")
     File folder;
+    @Value("${write.inplace:false}")
+    boolean writeInplace;
     @Value("${write.folder}")
     File writeFolder;
     @Value("${write.report}")
@@ -57,7 +60,7 @@ public class App implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         log.info("Scan project: {}, config: {}", scanProject, scanConfig);
-        log.info("Scanning folder: {}", folder);
+        log.info("Scanning folder: {}, write inplace: {}", folder, writeInplace);
 
         long startedAt = System.currentTimeMillis();
         FilePathMatcher filePathMatcher = FilePathMatcher.fromConfig(config.read);
@@ -68,9 +71,9 @@ public class App implements ApplicationRunner {
         LineReplacer lineReplacer = new LineReplacer(lineMatcher, reportMatcher, wordReplacer);
         ReportCollector reportCollector = new ReportCollector(reportHelper);
         FileReplacer fileReplacer = new FileReplacer(lineReplacer, reportCollector);
-        EmptyFolderWriter fileCompletedListener = new EmptyFolderWriter(writeFolder.toPath());
+        FolderWriter folderWriter = writeInplace ? new FolderWriter(folder.toPath()) : new EmptyFolderWriter(writeFolder.toPath());
         CsvFileReplacer csvFileReplacer = new CsvFileReplacer(config.csv);
-        FolderReplacer folderReplacer = new FolderReplacer(fileReplacer, csvFileReplacer, filePathMatcher, fileCompletedListener);
+        FolderReplacer folderReplacer = new FolderReplacer(fileReplacer, csvFileReplacer, filePathMatcher, folderWriter);
         ReportWriter reportWriter = new ReportWriter(reportHelper, writeReport.toPath());
         log.info("Configured in {} ms", System.currentTimeMillis() - startedAt);
 
@@ -82,6 +85,6 @@ public class App implements ApplicationRunner {
         log.info("Counters: \n\t{}", new TreeMap<>(Stats.getCounters()).entrySet().stream()
                 .map(String::valueOf).collect(Collectors.joining("\n\t")));
         log.info("Processed in {} ms", System.currentTimeMillis() - startedAt);
-        fileCompletedListener.verify();
+        folderWriter.verify();
     }
 }

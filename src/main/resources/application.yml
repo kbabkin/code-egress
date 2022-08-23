@@ -11,6 +11,8 @@ replace:
   defaultTemplate: "w{hash}"
 
 write:
+  # Default is Review phase (false). After review is completed, to Cleanup Code add JVM parameter -Dwrite.inplace=true
+  inplace: false
   folder: ${scan.project}/target/preview
   report: ${scan.project}/target/code-report.csv
   generatedReplacement: ${scan.project}/target/generated-replacement.csv

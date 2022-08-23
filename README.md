@@ -14,7 +14,7 @@ Maintain consistent results among multiple sequential scans and pre-release scan
 - Manual review of report file to fix configs and mark false-positives as **Allow=y**.
 - Repeat scan and review steps as needed. 
 - Backup report file *code-report.csv* or copy false-positives part of it to config *allow-report.csv*. 
-- Cleanup Code according to collected configuration.
+- Cleanup Code according to collected configuration. Add JVM parameter **-Dwrite.inplace=true**
 
 ## Report file
 Report contains violations of configured rules, one per line in CSV format.
