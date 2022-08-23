@@ -33,42 +33,42 @@ Example row:
 
 
 ## Configuration
-Check *src/main/resources/application.yml* and *scan-project/sample/config/scan-application.yml*
+Check [src/main/resources/application.yml](src/main/resources/application.yml) and [scan-project/sample/config/scan-application.yml](scan-project/sample/config/scan-application.yml)
 
 ### Sample project 
 
-- Edit *scan-project/sample/config/scan-application.yml*
+- Edit [scan-project/sample/config/scan-application.yml](scan-project/sample/config/scan-application.yml)
 
-
-    read:
-      # !!! Project folder to be scanned - provide actual value !!!
-      folder: "/work/project/scanned-sample"
-
+```
+read:
+  # !!! Project folder to be scanned - provide actual value !!!
+  folder: "/work/project/scanned-sample"
+```
 
 - Start **com.bt.code.egress.App**
 
 Folder structure
 
-
-    scan-project                    # folder to collect scan configuration for mutliple repos
-      sample                        # one repo/project configuration
-        config                      # configuration to be persisted in Git among scans and releases
-          scan-application.yml      # main configuration file
-          word-guard-value.csv      # dictionary to find, optionally with replacement
-          word-guard-pattern.csv    # patterns to find, optionally with replacement template
-          allow-report.csv          # allowed false-positives, copied from report
-        target                      # scan output files, ignored by Git and scan                        
-          code-report.csv           # report file to manually identify false-positives
-          generated-replacement.csv # can be adjusted and copied to dictionary
-          preview                   # folder for replaced files to check during review phase
-
+```
+scan-project                    # folder to collect scan configuration for mutliple repos
+  sample                        # one repo/project configuration
+    config                      # configuration to be persisted in Git among scans and releases
+      scan-application.yml      # main configuration file
+      word-guard-value.csv      # dictionary to find, optionally with replacement
+      word-guard-pattern.csv    # patterns to find, optionally with replacement template
+      allow-report.csv          # allowed false-positives, copied from report
+    target                      # scan output files, ignored by Git and scan                        
+      code-report.csv           # report file to manually identify false-positives
+      generated-replacement.csv # can be adjusted and copied to dictionary
+      preview                   # folder for replaced files to check during review phase
+```
 
 ### Custom project
 
-- Copy *scan-project/sample* , e.g. to *scan-project/myproject*
+- Copy [scan-project/sample](scan-project/sample) , e.g. to *scan-project/myproject*
 - Edit *read.folder* in *scan-project/myproject/config/scan-application.yml*
 - Start **-Dscan.project=scan-project/myproject com.bt.code.egress.App**
 
-### Test congiguration
+### Test configuration
 
 - Start **com.bt.code.egress.TestApp**
