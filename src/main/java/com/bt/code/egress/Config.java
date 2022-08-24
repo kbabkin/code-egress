@@ -10,6 +10,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.util.AntPathMatcher;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -154,11 +155,11 @@ public class Config {
         List<CsvFileDescriptor> files;
 
         public boolean includes(String filename) {
-            return files.stream().anyMatch(f -> f.getFilename().equals(filename));
+            return files.stream().anyMatch(f -> f.matches(filename));
         }
 
         public CsvFileDescriptor get(String filename) {
-            return files.stream().filter(f -> f.getFilename().equals(filename)).findFirst().orElse(null);
+            return files.stream().filter(f -> f.matches(filename)).findFirst().orElse(null);
         }
 
     }
@@ -167,6 +168,11 @@ public class Config {
     public static class CsvFileDescriptor {
         String filename;
         Columns columns;
+        AntPathMatcher pathMatcher = new AntPathMatcher("/");
+
+        public boolean matches(String filenameToMatch) {
+            return pathMatcher.match(filename, filenameToMatch);
+        }
     }
 
     @Data

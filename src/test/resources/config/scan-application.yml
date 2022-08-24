@@ -65,7 +65,7 @@ allow:
 csv:
   enabled: true
   files:
-    - filename: LegalEntity.csv
+    - filename: "*LegalEntity*.csv"
       columns:
         replace:
           "name": "legalEntityId"
@@ -78,7 +78,7 @@ csv:
 #Don't mask w8TaxForm
           "crdsLeId": "legalEntityId"
           "cftcCpty": "legalEntityId"
-    - filename: EM_User.csv
+    - filename: "*EM_User*.csv"
       columns:
         replace:
           "lastName": "userId"
@@ -86,14 +86,14 @@ csv:
           "userName": "userId"
         clear:
           - "emailAddress"
-    - filename: Institution.csv
+    - filename: "*Institution*.csv"
       columns:
         replace:
           "name": "institutionId"
           "fullName": "institutionId"
           "mnemonic": "institutionId"
           "cisNumber": "institutionId"
-    - filename: Book.csv
+    - filename: "*Book*.csv"
       columns:
         replace:
           "name": "bookId"
