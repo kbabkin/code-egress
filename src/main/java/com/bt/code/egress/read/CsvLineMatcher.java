@@ -2,15 +2,18 @@ package com.bt.code.egress.read;
 
 import com.bt.code.egress.Config;
 import com.google.common.collect.Lists;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.apache.commons.collections.CollectionUtils.*;
@@ -22,6 +25,8 @@ public class CsvLineMatcher implements LineMatcher {
 
     private final CsvParser csvParser;
     private final String filename;
+    @Getter
+    private final Set<String> errors = new LinkedHashSet<>();
 
     public CsvLineMatcher(Config.Columns csvColumnConfig,
                           String header, String delim, String quote,
@@ -51,13 +56,15 @@ public class CsvLineMatcher implements LineMatcher {
             Integer targetColumnIndex = csvParser.getColumnIndex(targetColumn);
 
             if (sourceColumnIndex == null) {
-                throw new RuntimeException(String.format("Source column %s not found in file %s",
+                addError(String.format("Source column '%s' not found in file %s",
                         sourceColumn, filename));
+                continue;
             }
 
             if (targetColumnIndex == null) {
-                throw new RuntimeException(String.format("Target column %s not found in file %s",
+                addError(String.format("Target column '%s' not found in file %s",
                         targetColumn, filename));
+                continue;
             }
 
             replacements.addAll(
@@ -73,7 +80,7 @@ public class CsvLineMatcher implements LineMatcher {
         for (String clearedColumn : clearConfig) {
             Integer clearedColumnIndex = csvParser.getColumnIndex(clearedColumn);
             if (clearedColumnIndex == null) {
-                log.error("Cleared column {} not found in file {}", clearedColumn, filename);
+                addError(String.format("Cleared column '%s' not found in file %s", clearedColumn, filename));
                 continue;
             }
             cleanups.addAll(
@@ -91,8 +98,9 @@ public class CsvLineMatcher implements LineMatcher {
 
 
             if (targetColumnIndex == null) {
-                throw new RuntimeException(String.format("Target column %s not found in file %s",
+                addError(String.format("Target column '%s' not found in file %s",
                         targetColumn, filename));
+                continue;
             }
 
             fills.addAll(
@@ -107,13 +115,15 @@ public class CsvLineMatcher implements LineMatcher {
                                               String line, String reason) {
         List<WordMatch> replacement = Lists.newArrayList();
         if (sourceColumnIndex >= columns.length) {
-            throw new RuntimeException(String.format("Out of bounds : Could not copy FROM column #%s in row : %s",
+            addError(String.format("Out of bounds : Could not copy FROM column #%s in row : %s",
                     sourceColumnIndex, line));
+            return Collections.emptyList();
         } else {
             LineToken sourceValue = columns[sourceColumnIndex];
             if (targetColumnIndex >= columns.length) {
-                throw new RuntimeException(String.format("Out of bounds : Could not copy '%s' TO column #%s in row : %s",
+                addError(String.format("Out of bounds : Could not copy '%s' TO column #%s in row : %s",
                         sourceValue.getWord(), targetColumnIndex, line));
+                return Collections.emptyList();
             } else {
                 LineToken targetValue = columns[targetColumnIndex];
                 replacement.add(new WordMatch(targetValue, reason, "", sourceValue.getWord()));
@@ -128,8 +138,9 @@ public class CsvLineMatcher implements LineMatcher {
         List<WordMatch> cleanup = Lists.newArrayList();
 
         if (targetColumnIndex >= columns.length) {
-            throw new RuntimeException(String.format("Out of bounds : Could not cleanup column #%s in row : %s",
+            addError(String.format("Out of bounds : Could not cleanup column #%s in row : %s",
                     targetColumnIndex, line));
+            return Collections.emptyList();
         } else {
             LineToken targetValue = columns[targetColumnIndex];
             cleanup.add(new WordMatch(targetValue, reason, "", ""));
@@ -144,8 +155,9 @@ public class CsvLineMatcher implements LineMatcher {
         List<WordMatch> fill = Lists.newArrayList();
 
         if (targetColumnIndex >= columns.length) {
-            throw new RuntimeException(String.format("Out of bounds : Could not fill column #%s in row : %s",
+            addError(String.format("Out of bounds : Could not fill column #%s in row : %s",
                     targetColumnIndex, line));
+            return Collections.emptyList();
         } else {
             LineToken targetValue = columns[targetColumnIndex];
             fill.add(new WordMatch(targetValue, reason, "", newValue));
@@ -191,5 +203,9 @@ public class CsvLineMatcher implements LineMatcher {
         }
 
         return processedLine;
+    }
+
+    private void addError(String error) {
+        errors.add(error);
     }
 }

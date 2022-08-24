@@ -2,12 +2,14 @@ package com.bt.code.egress.read;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+@Slf4j
 public class CsvParser {
     private final String delim;
     private final String quote;
@@ -34,9 +36,11 @@ public class CsvParser {
             if (unprocessedLinePart.startsWith(quote)) {
                 int endingQuotePos = unprocessedLinePart.indexOf(quote, quote.length());
                 if (endingQuotePos == -1) {
-                    throw new IllegalArgumentException("Unmatched quote in " + unprocessedLinePart);
+                    log.warn("Ignoring unmatched quote in " + unprocessedLinePart);
+                    nextDelimPos = unprocessedLinePart.indexOf(delim);
+                } else {
+                    nextDelimPos = unprocessedLinePart.indexOf(delim, endingQuotePos);
                 }
-                nextDelimPos = unprocessedLinePart.indexOf(delim, endingQuotePos);
             } else {
                 nextDelimPos = unprocessedLinePart.indexOf(delim);
             }

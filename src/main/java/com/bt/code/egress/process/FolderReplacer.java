@@ -19,7 +19,6 @@ import java.util.stream.Stream;
 @Slf4j
 public class FolderReplacer {
     private final FileReplacer fileReplacer;
-    private final CsvFileReplacer csvFileReplacer;
     private final FilePathMatcher filePathMatcher;
     private final FileCompleted.Listener fileCompletedListener;
 
@@ -53,27 +52,12 @@ public class FolderReplacer {
                 if (isZipFile(file.getFilePath())) {
                     processZip(file.getFilePath(), relativeFile.getFilePath(), false, false);
                 } else {
-                    //we need csv replacer then regular replacer (or visa versa -) )
-                    //TODO create a chain of 2 replacers
-//                    if (csvFileReplacer.isEnabled()) {
-//                        try {
-//                            if (csvFileReplacer.isEligibleForReplacement(file.getFilename())) {
-//                                FileCompleted fileCompleted = csvFileReplacer.replace(file);
-//                                fileCompletedListener.onFileCompleted(fileCompleted);
-//                            }
-//                        } catch (IOException e) {
-//                            throw new RuntimeException("Failed to process file: " + relativeFile, e);
-//                        }
-//
-//                    }
-//                    else {
-                        try (BufferedReader bufferedReader = Files.newBufferedReader(file.getFilePath())) {
-                            FileCompleted fileCompleted = fileReplacer.replace(relativeFile, bufferedReader);
-                            fileCompletedListener.onFileCompleted(fileCompleted);
-                        } catch (IOException e) {
-                            throw new RuntimeException("Failed to process file: " + relativeFile, e);
-                        }
-//                    }
+                    try (BufferedReader bufferedReader = Files.newBufferedReader(file.getFilePath())) {
+                        FileCompleted fileCompleted = fileReplacer.replace(relativeFile, bufferedReader);
+                        fileCompletedListener.onFileCompleted(fileCompleted);
+                    } catch (IOException e) {
+                        throw new RuntimeException("Failed to process file: " + relativeFile, e);
+                    }
                 }
             });
         }

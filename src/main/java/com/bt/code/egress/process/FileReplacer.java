@@ -5,14 +5,19 @@ import com.bt.code.egress.read.CsvLineMatcher;
 import com.bt.code.egress.read.LineLocation;
 import com.bt.code.egress.read.LineToken;
 import com.bt.code.egress.write.FileCompleted;
+import com.google.common.collect.Maps;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.charset.MalformedInputException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -22,6 +27,8 @@ public class FileReplacer {
     private final Config.CsvReplacementConfig csvConfig;
     private final String csvDelim;
     private final String csvQuote;
+    @Getter
+    private final Map<String, Set<String>> errors = Maps.newLinkedHashMap();
 
     public FileCompleted replace(FileLocation file, BufferedReader bufferedReader) throws IOException {
         log.info("Read file: {}", file);
@@ -35,8 +42,8 @@ public class FileReplacer {
         ArrayList<String> originalLines = new ArrayList<>();
         List<String> replacedLines = new ArrayList<>();
         int lineNumber = 0;
+        CsvLineMatcher csvLineMatcher = null;
         try {
-            CsvLineMatcher csvLineMatcher = null;
             while (((line = bufferedReader.readLine()) != null)) {
                 if (isCsv && lineNumber == 0) {
                     csvLineMatcher = new CsvLineMatcher(
@@ -53,6 +60,9 @@ public class FileReplacer {
             log.error("Failed to read file {}", file, e);
             textMatchedListener.onMatched(new TextMatched(new LineLocation(file.toReportedPath(), 0),
                     new LineToken(""), null, "", "FAILED to read file " + file));
+        }
+        if (csvLineMatcher != null && !CollectionUtils.isEmpty(csvLineMatcher.getErrors())) {
+            errors.put(file.toReportedPath(), csvLineMatcher.getErrors());
         }
         return new FileCompleted(file, originalLines, replacedLines);
     }

@@ -1,6 +1,5 @@
 package com.bt.code.egress;
 
-import com.bt.code.egress.process.CsvFileReplacer;
 import com.bt.code.egress.process.FileLocation;
 import com.bt.code.egress.process.FileReplacer;
 import com.bt.code.egress.process.FolderReplacer;
@@ -16,6 +15,7 @@ import com.bt.code.egress.report.Stats;
 import com.bt.code.egress.write.EmptyFolderWriter;
 import com.bt.code.egress.write.FolderWriter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
@@ -77,8 +77,7 @@ public class App implements ApplicationRunner {
         ReportCollector reportCollector = new ReportCollector(reportHelper);
         FileReplacer fileReplacer = new FileReplacer(lineReplacer, reportCollector, config.csv, csvDelim, csvQuote);
         FolderWriter folderWriter = writeInplace ? new FolderWriter(folder.toPath()) : new EmptyFolderWriter(writeFolder.toPath());
-        CsvFileReplacer csvFileReplacer = new CsvFileReplacer(config.csv);
-        FolderReplacer folderReplacer = new FolderReplacer(fileReplacer, csvFileReplacer, filePathMatcher, folderWriter);
+        FolderReplacer folderReplacer = new FolderReplacer(fileReplacer, filePathMatcher, folderWriter);
         ReportWriter reportWriter = new ReportWriter(reportHelper, writeReport.toPath());
         log.info("Configured in {} ms", System.currentTimeMillis() - startedAt);
 
@@ -87,9 +86,29 @@ public class App implements ApplicationRunner {
 
         wordReplacer.saveGenerated(writeGeneratedReplacement.toPath());
 
+        logErrors(fileReplacer);
+
         log.info("Counters: \n\t{}", new TreeMap<>(Stats.getCounters()).entrySet().stream()
                 .map(String::valueOf).collect(Collectors.joining("\n\t")));
         log.info("Processed in {} ms", System.currentTimeMillis() - startedAt);
         folderWriter.verify();
+    }
+
+    private void logErrors(FileReplacer fileReplacer) {
+        if (!fileReplacer.getErrors().isEmpty()) {
+            log.info("File errors: ");
+            StringBuilder sbErrors = new StringBuilder();
+            for (String file : fileReplacer.getErrors().keySet()) {
+                sbErrors.append("\n=======================================================\n");
+                sbErrors.append(String.format("%d error(s) in %s\n",
+                        fileReplacer.getErrors().get(file).size(),
+                        file));
+                sbErrors.append("=======================================================\n\t");
+                sbErrors.append(fileReplacer.getErrors().get(file)
+                        .stream()
+                        .collect(Collectors.joining("\n\t")));
+            }
+            log.info(sbErrors.toString());
+        }
     }
 }
