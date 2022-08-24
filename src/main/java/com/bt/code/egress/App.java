@@ -15,7 +15,6 @@ import com.bt.code.egress.report.Stats;
 import com.bt.code.egress.write.EmptyFolderWriter;
 import com.bt.code.egress.write.FolderWriter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
@@ -59,6 +58,11 @@ public class App implements ApplicationRunner {
     @Value("${csv.quote:\"}")
     String csvQuote;
 
+    @Value("${context.keepLength:15}")
+    int contextKeepLength;
+    @Value("${context.minCompareLength:2}")
+    int contextMinCompareLength;
+
     @Autowired
     Config config;
 
@@ -70,14 +74,15 @@ public class App implements ApplicationRunner {
         long startedAt = System.currentTimeMillis();
         FilePathMatcher filePathMatcher = FilePathMatcher.fromConfig(config.read);
         LineGuardIgnoreMatcher lineMatcher = LineGuardIgnoreMatcher.fromConfigsOptimized(config.word);
-        ReportHelper reportHelper = new ReportHelper(15);
+        ReportHelper reportHelper = new ReportHelper(contextKeepLength, contextMinCompareLength);
         ReportMatcher reportMatcher = ReportMatcher.fromConfigs(reportHelper, config.getAllow().getReportFiles());
         WordReplacer wordReplacer = new WordReplacer(replaceDefaultTemplate);
         LineReplacer lineReplacer = new LineReplacer(lineMatcher, reportMatcher, wordReplacer);
         ReportCollector reportCollector = new ReportCollector(reportHelper);
         FileReplacer fileReplacer = new FileReplacer(lineReplacer, reportCollector, config.csv, csvDelim, csvQuote);
         FolderWriter folderWriter = writeInplace ? new FolderWriter(folder.toPath()) : new EmptyFolderWriter(writeFolder.toPath());
-        FolderReplacer folderReplacer = new FolderReplacer(fileReplacer, filePathMatcher, folderWriter);
+        FolderReplacer folderReplacer = new FolderReplacer(fileReplacer, filePathMatcher,
+                reportMatcher.getAllowFilePathMatcher(), reportCollector, folderWriter);
         ReportWriter reportWriter = new ReportWriter(reportHelper, writeReport.toPath());
         log.info("Configured in {} ms", System.currentTimeMillis() - startedAt);
 

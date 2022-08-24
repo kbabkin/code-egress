@@ -4,6 +4,7 @@ import com.bt.code.egress.Config;
 import com.bt.code.egress.read.CsvLineMatcher;
 import com.bt.code.egress.read.LineLocation;
 import com.bt.code.egress.read.LineToken;
+import com.bt.code.egress.report.Stats;
 import com.bt.code.egress.write.FileCompleted;
 import com.google.common.collect.Maps;
 import lombok.Getter;
@@ -13,7 +14,6 @@ import org.apache.commons.collections.CollectionUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.nio.charset.MalformedInputException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -56,8 +56,9 @@ public class FileReplacer {
                 replacedLines.add(replace);
                 lineNumber++;
             }
-        } catch (MalformedInputException e) {
-            log.error("Failed to read file {}", file, e);
+        } catch (Exception e) {
+            log.error("Failed to process file {}", file, e);
+            Stats.fileFailed();
             textMatchedListener.onMatched(new TextMatched(new LineLocation(file.toReportedPath(), 0),
                     new LineToken(""), null, "", "FAILED to read file " + file));
         }

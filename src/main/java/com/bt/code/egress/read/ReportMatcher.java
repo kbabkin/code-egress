@@ -8,6 +8,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -45,12 +46,14 @@ public class ReportMatcher {
                     String context = r.getContext();
                     return StringUtils.isBlank(context) || context.equals(tokenContext)
                             // ability to provide only part of context
-                            || tokenContext.length() > context.length() && context.length() > word.length() + 5
+                            || tokenContext.length() > context.length() && context.length() >= word.length() + reportHelper.getContextMinCompareLength()
                             && tokenContext.contains(context) && context.toLowerCase().contains(word);
                 })
                 .filter(r -> {
                     String file = r.getFile();
-                    return StringUtils.isBlank(file) || file.equals(lineLocation.getFile());
+                    return StringUtils.isBlank(file) || file.equals(lineLocation.getFile())
+                            // ability to use file path filter
+                            || FilePathMatcher.match(file, lineLocation.getFile());
                 })
                 .map(Report.ReportLine::getAllow)
                 // if both allowing and disallowing rows, use allowing one
@@ -58,5 +61,14 @@ public class ReportMatcher {
 
         optionalAllowed.ifPresent(allowed -> log.info("Report allowed: {} for {}, {}, {}", allowed, word, lineToken, lineLocation));
         return optionalAllowed.orElse(null);
+    }
+
+    public FilePathMatcher getAllowFilePathMatcher() {
+        List<Report.ReportLine> noWord = rowsByText.get("");
+        Set<String> fileFilters = noWord == null ? Collections.emptySet() : noWord.stream()
+                .map(Report.ReportLine::getFile)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        return new FilePathMatcher(fileFilters, Collections.emptySet());
     }
 }

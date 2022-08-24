@@ -6,7 +6,7 @@ read:
     values:
       - "**/*/"
       - "**/*"
-    valuesFiles: []
+    valuesFiles: [ ]
   ignore:
     # file folder and file name patterns to exclude from scan
     values:
@@ -24,7 +24,7 @@ read:
       - "**/*.rpm"
       - "**/code-report.csv"
       - "**/.attach_pid*"
-    valuesFiles: []
+    valuesFiles: [ ]
 
 word:
   guard:
@@ -32,11 +32,13 @@ word:
       ## Mappings of "from" and "to" word replacements. "To" can be empty, will be generated. Examples:
       "acme": "testCompany"
       "akka": ""
+      "123": ""
       "Dummy": "D"
       "Yuppi": "Y"
+      "[guard@acme.com]": "replaced@mail.local"
     patterns:
       ## Mappings of "from" and "to" pattern replacements. "To" can contain template variables, can be empty.
-      "[\\w+@\\w+(.\\w+)+]": "u{hash}@mail.local"
+      "[\\w+@\\w+(\\.\\w+)+]": "u{hash}@mail.local"
       "[\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}]": "h{hash}.domain.local"
     valueFiles:
       # Long list of words can be extracted to separate files in config folder
@@ -50,10 +52,11 @@ word:
       - "localhost"
       - "127.0.0.1"
       - "0.0.0.0"
+      - "ignore@acme.com"
     patterns: # ignore pattern is searched, use ^..$ to match complete word
       - "simpsons"
-    valueFiles: []
-    patternFiles: []
+    valueFiles: [ ]
+    patternFiles: [ ]
 
 
 # Manual override for false-positives
@@ -75,7 +78,7 @@ csv:
           "pbgoLegalEntityId": "legalEntityId"
           "cportLegalEntityId": "legalEntityId"
           "subAccountNm": "legalEntityId"
-#Don't mask w8TaxForm
+          #Don't mask w8TaxForm
           "crdsLeId": "legalEntityId"
           "cftcCpty": "legalEntityId"
     - filename: "*EM_User*.csv"

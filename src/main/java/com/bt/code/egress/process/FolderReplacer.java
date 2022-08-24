@@ -1,6 +1,8 @@
 package com.bt.code.egress.process;
 
 import com.bt.code.egress.read.FilePathMatcher;
+import com.bt.code.egress.read.LineLocation;
+import com.bt.code.egress.read.LineToken;
 import com.bt.code.egress.report.Stats;
 import com.bt.code.egress.write.FileCompleted;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +22,8 @@ import java.util.stream.Stream;
 public class FolderReplacer {
     private final FileReplacer fileReplacer;
     private final FilePathMatcher filePathMatcher;
+    private final FilePathMatcher allowFilePathMatcher;
+    private final TextMatched.Listener textMatchedListener;
     private final FileCompleted.Listener fileCompletedListener;
 
     public void replace(FileLocation folder) {
@@ -47,6 +51,13 @@ public class FolderReplacer {
                 if (!filePathMatcher.match(name)) {
                     log.info("Ignore file: {}", relativeFile);
                     Stats.fileIgnored();
+                    return;
+                }
+                if (allowFilePathMatcher.match(name)) {
+                    log.info("Ignore file due to previous failure: {}", relativeFile);
+                    Stats.fileFailed();
+                    textMatchedListener.onMatched(new TextMatched(new LineLocation(name, 0),
+                            new LineToken(""), true, "", "Ignore file due to previous failure"));
                     return;
                 }
                 if (isZipFile(file.getFilePath())) {

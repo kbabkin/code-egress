@@ -1,6 +1,7 @@
 package com.bt.code.egress.report;
 
 import com.bt.code.egress.read.LineToken;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
@@ -33,12 +34,14 @@ public class ReportHelper {
 
     private static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withHeader(Headers.class);
     private static final String WRAP = "..";
-    private final int contextLength;
+    private final int contextKeepLength;
+    @Getter
+    private final int contextMinCompareLength;
 
     public String getContext(LineToken lineToken) {
         String line = lineToken.getLine();
 
-        int startPos = lineToken.getStartPos() - contextLength;
+        int startPos = lineToken.getStartPos() - contextKeepLength;
         if (startPos < 0 || (startPos > 0 && startPos - WRAP.length() < 0)) {
             startPos = 0;
         }
@@ -46,7 +49,7 @@ public class ReportHelper {
             startPos++;
         }
 
-        int endPos = lineToken.getEndPos() + contextLength;
+        int endPos = lineToken.getEndPos() + contextKeepLength;
         if (endPos > line.length() || (endPos < line.length() && endPos + WRAP.length() > line.length())) {
             endPos = line.length();
         }
@@ -92,7 +95,7 @@ public class ReportHelper {
 
     public List<Report.ReportLine> read(Reader reader) throws IOException {
         List<Report.ReportLine> reportLines = new ArrayList<>();
-        CSVParser records = CSV_FORMAT.withFirstRecordAsHeader().parse(reader);
+        CSVParser records = CSV_FORMAT.withFirstRecordAsHeader().withTrim().parse(reader);
         for (CSVRecord record : records) {
             reportLines.add(new Report.ReportLine(
                     toBoolean(record.get(Headers.Allow)),

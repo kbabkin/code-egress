@@ -28,6 +28,10 @@ public class Stats {
         increment("Files Changed");
     }
 
+    public void fileFailed() {
+        increment("Failed Files");
+    }
+
     public void fileIgnored() {
         increment("Ignored Files");
     }
