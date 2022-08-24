@@ -55,24 +55,25 @@ public class FolderReplacer {
                 } else {
                     //we need csv replacer then regular replacer (or visa versa -) )
                     //TODO create a chain of 2 replacers
-                    if (csvFileReplacer.isEnabled()) {
-                        try {
-                            if (csvFileReplacer.isEligibleForReplacement(file.getFilename())) {
-                                FileCompleted fileCompleted = csvFileReplacer.replace(file);
-                                fileCompletedListener.onFileCompleted(fileCompleted);
-                            }
-                        } catch (IOException e) {
-                            throw new RuntimeException("Failed to process file: " + relativeFile, e);
-                        }
-
-                    } else {
+//                    if (csvFileReplacer.isEnabled()) {
+//                        try {
+//                            if (csvFileReplacer.isEligibleForReplacement(file.getFilename())) {
+//                                FileCompleted fileCompleted = csvFileReplacer.replace(file);
+//                                fileCompletedListener.onFileCompleted(fileCompleted);
+//                            }
+//                        } catch (IOException e) {
+//                            throw new RuntimeException("Failed to process file: " + relativeFile, e);
+//                        }
+//
+//                    }
+//                    else {
                         try (BufferedReader bufferedReader = Files.newBufferedReader(file.getFilePath())) {
                             FileCompleted fileCompleted = fileReplacer.replace(relativeFile, bufferedReader);
                             fileCompletedListener.onFileCompleted(fileCompleted);
                         } catch (IOException e) {
                             throw new RuntimeException("Failed to process file: " + relativeFile, e);
                         }
-                    }
+//                    }
                 }
             });
         }

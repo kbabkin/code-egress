@@ -54,6 +54,11 @@ public class App implements ApplicationRunner {
     @Value("${scan.config}")
     String scanConfig;
 
+    @Value("${csv.delim:,}")
+    String csvDelim;
+    @Value("${csv.quote:\"}")
+    String csvQuote;
+
     @Autowired
     Config config;
 
@@ -70,7 +75,7 @@ public class App implements ApplicationRunner {
         WordReplacer wordReplacer = new WordReplacer(replaceDefaultTemplate);
         LineReplacer lineReplacer = new LineReplacer(lineMatcher, reportMatcher, wordReplacer);
         ReportCollector reportCollector = new ReportCollector(reportHelper);
-        FileReplacer fileReplacer = new FileReplacer(lineReplacer, reportCollector);
+        FileReplacer fileReplacer = new FileReplacer(lineReplacer, reportCollector, config.csv, csvDelim, csvQuote);
         FolderWriter folderWriter = writeInplace ? new FolderWriter(folder.toPath()) : new EmptyFolderWriter(writeFolder.toPath());
         CsvFileReplacer csvFileReplacer = new CsvFileReplacer(config.csv);
         FolderReplacer folderReplacer = new FolderReplacer(fileReplacer, csvFileReplacer, filePathMatcher, folderWriter);

@@ -1,5 +1,6 @@
 package com.bt.code.egress.process;
 
+import com.bt.code.egress.read.CsvLineMatcher;
 import com.bt.code.egress.read.LineGuardIgnoreMatcher;
 import com.bt.code.egress.read.LineLocation;
 import com.bt.code.egress.read.LineToken;
@@ -9,13 +10,16 @@ import com.bt.code.egress.report.Stats;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
+@Slf4j
 public class LineReplacer {
 
     private final LineGuardIgnoreMatcher lineMatcher;
@@ -30,14 +34,19 @@ public class LineReplacer {
         WordMatch conflict;
     }
 
-    public String replace(String line, LineLocation lineLocation, TextMatched.Listener textMatchedListener) {
-        List<WordMatch> rawMatches = lineMatcher.getMatches(line);
-        if (rawMatches.isEmpty()) {
+    public String replace(String line, LineLocation lineLocation, TextMatched.Listener textMatchedListener, @Nullable CsvLineMatcher csvLineMatcher) {
+        List<WordMatch> matches = lineMatcher.getMatches(line);
+        if (matches.isEmpty()) {
             return line;
+        } else {
+            if (csvLineMatcher != null) {
+                List<WordMatch> csvMatches = csvLineMatcher.getMatches(line);
+                matches.addAll(csvMatches);
+            }
         }
-        Stats.wordsMatched(rawMatches.size());
+        Stats.wordsMatched(matches.size());
 
-        List<MatchParam> matchParams = rawMatches.stream()
+        List<MatchParam> matchParams = matches.stream()
                 // reportMatcher can return null
                 .map(rm -> new MatchParam(rm, reportMatcher.getAllowed(rm.getLineToken(), lineLocation), null))
                 .collect(Collectors.toList());
@@ -53,7 +62,7 @@ public class LineReplacer {
             WordMatch wordMatch = matchParam.getWordMatch();
             LineToken lineToken = wordMatch.getLineToken();
 
-            String replacement = wordReplacer.replace(wordMatch);
+            String replacement = wordMatch.getReplacement() != null ? wordMatch.getReplacement() : wordReplacer.replace(wordMatch);
             String comment = wordMatch.getReason();
             if (Boolean.TRUE.equals(matchParam.getAllowed())) {
                 comment = "Allowed, " + wordMatch.getReason() + ", Suggested " + replacement;

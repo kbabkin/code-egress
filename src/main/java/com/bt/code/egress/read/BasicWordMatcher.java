@@ -38,14 +38,14 @@ public class BasicWordMatcher implements WordMatcher {
     public WordMatch getWordMatch(String word) {
         if (values.containsKey(word)) {
             return new WordMatch(new LineToken(word, 0, word.length()),
-                    "Value " + word, values.get(word));
+                    "Value " + word, values.get(word), null);
         }
         for (Map.Entry<Pattern, String> patternEntry : patterns.entrySet()) {
             Pattern pattern = patternEntry.getKey();
             Matcher matcher = pattern.matcher(word);
             if (patternMatcher.apply(matcher)) {
                 return new WordMatch(new LineToken(word, matcher.start(), matcher.end()),
-                        "Pattern " + pattern, patternEntry.getValue());
+                        "Pattern " + pattern, patternEntry.getValue(), null);
             }
         }
         return null;

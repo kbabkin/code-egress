@@ -172,5 +172,6 @@ public class Config {
     public static class Columns {
         Map<String, String> replace = new LinkedHashMap<>();
         List<String> clear = new ArrayList<>();
+        Map<String, String> fill = new LinkedHashMap<>();
     }
 }

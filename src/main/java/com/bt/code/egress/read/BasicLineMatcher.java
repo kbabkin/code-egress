@@ -55,7 +55,7 @@ public class BasicLineMatcher implements LineMatcher {
         if (result.isEmpty()) {
             result = new ArrayList<>();
         }
-        result.add(new WordMatch(lineToken, matchReason, template));
+        result.add(new WordMatch(lineToken, matchReason, template, null));
         return result;
 
     }

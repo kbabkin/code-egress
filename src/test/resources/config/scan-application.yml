@@ -32,6 +32,8 @@ word:
       ## Mappings of "from" and "to" word replacements. "To" can be empty, will be generated. Examples:
       "acme": "testCompany"
       "akka": ""
+      "Dummy": "D"
+      "Yuppi": "Y"
     patterns:
       ## Mappings of "from" and "to" pattern replacements. "To" can contain template variables, can be empty.
       "[\\w+@\\w+(.\\w+)+]": "u{hash}@mail.local"
@@ -61,19 +63,49 @@ allow:
     - ${write.report} # results from previous run, overridden after rerun, cleaned by maven, so manual changes in it can be lost
 
 csv:
-  enabled: false
+  enabled: true
   files:
-    - filename: accounts.csv
+    - filename: LegalEntity.csv
+      columns:
+        replace:
+          "name": "legalEntityId"
+          "fullName": "legalEntityId"
+          "mnemonic": "legalEntityId"
+          "cisNumber": "legalEntityId"
+          "pbgoLegalEntityId": "legalEntityId"
+          "cportLegalEntityId": "legalEntityId"
+          "subAccountNm": "legalEntityId"
+#Don't mask w8TaxForm
+          "crdsLeId": "legalEntityId"
+          "cftcCpty": "legalEntityId"
+    - filename: EM_User.csv
+      columns:
+        replace:
+          "lastName": "userId"
+          "firstName": "userId"
+          "userName": "userId"
+        clear:
+          - "emailAddress"
+    - filename: Institution.csv
+      columns:
+        replace:
+          "name": "institutionId"
+          "fullName": "institutionId"
+          "mnemonic": "institutionId"
+          "cisNumber": "institutionId"
+    - filename: Book.csv
+      columns:
+        replace:
+          "name": "bookId"
+          "fullName": "bookId"
+          "mnemonic": "bookId"
+          "adpAcctNum": "bookId"
+    - filename: test.csv
       columns:
         replace:
           "shortName": "id"
           "longName": "id"
         clear:
           - "email"
-          - "address"
-    - filename: legalEntities.csv
-      columns:
-        replace:
-          "CRDS_ID": "id"
-        clear:
-          - "description"
+        fill:
+          "address": "N/A"

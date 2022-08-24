@@ -52,6 +52,10 @@ public class WordReplacer {
         }
         String predefined = wordMatch.getTemplate();
         String template = StringUtils.isBlank(predefined) ? defaultTemplate : predefined;
+
+        if (wordMatch.getReplacement() != null) {
+            return wordMatch.getReplacement(); // for csv matches
+        }
         return generate(word, template);
     }
 
