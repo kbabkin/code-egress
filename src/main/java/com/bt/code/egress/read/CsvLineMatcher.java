@@ -169,8 +169,8 @@ public class CsvLineMatcher implements LineMatcher {
 
         return Collections.singletonList(new WordMatch(
                 new LineToken(line, startPos, endPos),
-                allMatches.stream().map(WordMatch::getReason).collect(Collectors.joining(";")),
-                "",
+                allMatchesSorted.stream().map(WordMatch::getReason).collect(Collectors.joining(";")),
+                null,
                 applyReplacements(line, allMatchesSorted, startPos, endPos)
         ));
 

@@ -1,8 +1,10 @@
 package com.bt.code.egress.read;
 
+import lombok.EqualsAndHashCode;
 import lombok.Value;
 
 @Value
+@EqualsAndHashCode
 public class WordMatch {
     LineToken lineToken;
     String reason;

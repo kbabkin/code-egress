@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableMap;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -29,7 +30,19 @@ class CsvLineMatcherTest {
 
     @Test
     void testMerge() {
-        //TODO implement
+        CsvLineMatcher csvLineMatcher = new CsvLineMatcher(columnsConfig, "id,name,email,address,description", ",", "\"", "test.csv");
+        String line = "1,Joe,joe@server.com,\"100200 , NY\",somebody";
+
+        assertEquals(Arrays.asList(new WordMatch(new LineToken(line, 2, 20), "A;B", null, "1,")),
+                csvLineMatcher.merge(
+                        Arrays.asList(
+                                new WordMatch(new LineToken(line, 2, 5), "A", null, "1"),
+                                new WordMatch(new LineToken(line, 6, 20), "B", null, "")
+                        ),
+                        Collections.emptyList(),
+                        Collections.emptyList(),
+                        line)
+        );
     }
 
     @Test
