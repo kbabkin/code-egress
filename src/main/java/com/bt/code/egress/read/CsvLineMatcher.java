@@ -9,6 +9,7 @@ import org.apache.commons.collections.CollectionUtils;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -35,7 +36,6 @@ public class CsvLineMatcher implements LineMatcher {
         this.csvParser = new CsvParser(header, delim, quote);
         this.filename = filename;
     }
-
 
     @Override
     public List<WordMatch> getMatches(String line) {
@@ -95,7 +95,6 @@ public class CsvLineMatcher implements LineMatcher {
         for (String targetColumn : fillConfig.keySet()) {
             Integer targetColumnIndex = csvParser.getColumnIndex(targetColumn);
             String valueToFill = fillConfig.get(targetColumn);
-
 
             if (targetColumnIndex == null) {
                 addError(String.format("Target column '%s' not found in file %s",
@@ -173,19 +172,36 @@ public class CsvLineMatcher implements LineMatcher {
         if (CollectionUtils.isEmpty(allMatches)) {
             return Collections.emptyList();
         }
-        LinkedList<WordMatch> allMatchesSorted = new LinkedList<>(allMatches);
-        allMatchesSorted.sort(Comparator.comparing(m -> m.getLineToken().getStartPos()));
-        //ha ha who is sure where linked list's last element is ? -)
-        int startPos = allMatchesSorted.getFirst().getLineToken().getStartPos();
-        int endPos = allMatchesSorted.getLast().getLineToken().getEndPos();
+        LinkedList<WordMatch> allMatchesSortedByStartPos = new LinkedList<>(allMatches);
+        allMatchesSortedByStartPos.sort(Comparator.comparing(m -> m.getLineToken().getStartPos()));
+
+        //make sure the matches are consecutive and non-overlapping,
+        //hence the sort order by startPos is the same as by endPos
+        validateAndCleanup(allMatchesSortedByStartPos);
+
+        int startPos = allMatchesSortedByStartPos.getFirst().getLineToken().getStartPos();
+        int endPos = allMatchesSortedByStartPos.getLast().getLineToken().getEndPos();
 
         return Collections.singletonList(new WordMatch(
                 new LineToken(line, startPos, endPos),
-                allMatchesSorted.stream().map(WordMatch::getReason).collect(Collectors.joining(";")),
+                allMatchesSortedByStartPos.stream().map(WordMatch::getReason).collect(Collectors.joining(";")),
                 null,
-                applyReplacements(line, allMatchesSorted, startPos, endPos)
+                applyReplacements(line, allMatchesSortedByStartPos, startPos, endPos)
         ));
 
+    }
+
+    protected void validateAndCleanup(LinkedList<WordMatch> allMatchesSortedByStartPos) {
+        int lastEndPos = 0;
+        WordMatch current;
+        for (Iterator<WordMatch> it = allMatchesSortedByStartPos.iterator(); it.hasNext(); ) {
+            current = it.next();
+            if (current.getLineToken().getStartPos() < lastEndPos) {
+                it.remove();
+            } else {
+                lastEndPos = current.getLineToken().getEndPos();
+            }
+        }
     }
 
     protected String applyReplacements(String line, Collection<WordMatch> sortedMatches, int startPos, int endPos) {

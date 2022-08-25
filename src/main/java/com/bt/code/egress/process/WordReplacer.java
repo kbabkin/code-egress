@@ -45,6 +45,10 @@ public class WordReplacer {
     }
 
     public String replace(WordMatch wordMatch) {
+        if (wordMatch.getReplacement() != null) {
+            return wordMatch.getReplacement(); // for csv matches
+        }
+
         String word = wordMatch.getLineToken().getWordLowerCase();
         String generated = generatedMap.get(word);
         if (generated != null) {
@@ -53,9 +57,6 @@ public class WordReplacer {
         String predefined = wordMatch.getTemplate();
         String template = StringUtils.isBlank(predefined) ? defaultTemplate : predefined;
 
-        if (wordMatch.getReplacement() != null) {
-            return wordMatch.getReplacement(); // for csv matches
-        }
         return generate(word, template);
     }
 

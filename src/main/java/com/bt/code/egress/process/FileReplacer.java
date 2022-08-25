@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -41,11 +42,10 @@ public class FileReplacer {
         int lineNum = 0;
         ArrayList<String> originalLines = new ArrayList<>();
         List<String> replacedLines = new ArrayList<>();
-        int lineNumber = 0;
         CsvLineMatcher csvLineMatcher = null;
         try {
             while (((line = bufferedReader.readLine()) != null)) {
-                if (isCsv && lineNumber == 0) {
+                if (isCsv && lineNum == 0) {
                     csvLineMatcher = new CsvLineMatcher(
                             csvConfig.get(file.getFilename()).getColumns(),
                             line, csvDelim, csvQuote,
@@ -54,7 +54,6 @@ public class FileReplacer {
                 String replace = lineReplacer.replace(line, new LineLocation(file.toReportedPath(), ++lineNum), textMatchedListener, csvLineMatcher);
                 originalLines.add(line);
                 replacedLines.add(replace);
-                lineNumber++;
             }
         } catch (Exception e) {
             log.error("Failed to process file {}", file, e);
@@ -70,5 +69,23 @@ public class FileReplacer {
 
     private boolean isEligibleForCsvReplacement(String filename) {
         return csvConfig.includes(filename) && csvConfig.getEnabled();
+    }
+
+    public void verify() {
+        if (!errors.isEmpty()) {
+            log.info("File errors: ");
+            StringBuilder sbErrors = new StringBuilder();
+            for (String file : errors.keySet()) {
+                sbErrors.append("\n=======================================================\n");
+                sbErrors.append(String.format("%d error(s) in %s\n",
+                        errors.get(file).size(),
+                        file));
+                sbErrors.append("=======================================================\n\t");
+                sbErrors.append(errors.get(file)
+                        .stream()
+                        .collect(Collectors.joining("\n\t")));
+            }
+            log.info(sbErrors.toString());
+        }
     }
 }

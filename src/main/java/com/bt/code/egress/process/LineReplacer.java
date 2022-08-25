@@ -63,7 +63,7 @@ public class LineReplacer {
             WordMatch wordMatch = matchParam.getWordMatch();
             LineToken lineToken = wordMatch.getLineToken();
 
-            String replacement = wordMatch.getReplacement() != null ? wordMatch.getReplacement() : wordReplacer.replace(wordMatch);
+            String replacement = wordReplacer.replace(wordMatch);
             String comment = wordMatch.getReason();
             if (Boolean.TRUE.equals(matchParam.getAllowed())) {
                 comment = "Allowed, " + wordMatch.getReason() + ", Suggested " + replacement;
@@ -110,5 +110,4 @@ public class LineReplacer {
                 .filter(m1 -> !Boolean.TRUE.equals(m1.getAllowed()))
                 .forEach(toReplace::add);
     }
-
 }

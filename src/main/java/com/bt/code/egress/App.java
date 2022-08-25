@@ -91,7 +91,7 @@ public class App implements ApplicationRunner {
 
         wordReplacer.saveGenerated(writeGeneratedReplacement.toPath());
 
-        logErrors(fileReplacer);
+        fileReplacer.verify();
 
         log.info("Counters: \n\t{}", new TreeMap<>(Stats.getCounters()).entrySet().stream()
                 .map(String::valueOf).collect(Collectors.joining("\n\t")));
