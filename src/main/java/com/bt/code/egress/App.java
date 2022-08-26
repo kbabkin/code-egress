@@ -98,22 +98,4 @@ public class App implements ApplicationRunner {
         log.info("Processed in {} ms", System.currentTimeMillis() - startedAt);
         folderWriter.verify();
     }
-
-    private void logErrors(FileReplacer fileReplacer) {
-        if (!fileReplacer.getErrors().isEmpty()) {
-            log.info("File errors: ");
-            StringBuilder sbErrors = new StringBuilder();
-            for (String file : fileReplacer.getErrors().keySet()) {
-                sbErrors.append("\n=======================================================\n");
-                sbErrors.append(String.format("%d error(s) in %s\n",
-                        fileReplacer.getErrors().get(file).size(),
-                        file));
-                sbErrors.append("=======================================================\n\t");
-                sbErrors.append(fileReplacer.getErrors().get(file)
-                        .stream()
-                        .collect(Collectors.joining("\n\t")));
-            }
-            log.info(sbErrors.toString());
-        }
-    }
 }
