@@ -15,6 +15,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 @RequiredArgsConstructor
@@ -26,11 +27,11 @@ public class FolderReplacer {
     private final TextMatched.Listener textMatchedListener;
     private final FileCompleted.Listener fileCompletedListener;
 
-    public void replace(FileLocation folder) {
-        replace(folder, folder);
+    public void replace(FileLocation folder, BiConsumer<String, Runnable> submitter) {
+        replace(folder, folder, submitter);
     }
 
-    void replace(FileLocation folder, FileLocation rootFolder) {
+    void replace(FileLocation folder, FileLocation rootFolder, BiConsumer<String, Runnable> submitter) {
         if (!Files.isDirectory(folder.getFilePath())) {
             throw new RuntimeException("Not a folder: " + folder);
         }
@@ -41,7 +42,7 @@ public class FolderReplacer {
                 String name = relativeFile.toString().toLowerCase();
                 if (Files.isDirectory(file.getFilePath())) {
                     if (filePathMatcher.match(name + "/")) {
-                        replace(file, rootFolder);
+                        replace(file, rootFolder, submitter);
                     } else {
                         log.info("Ignore folder: {}", relativeFile);
                         Stats.folderIgnored();
@@ -61,14 +62,17 @@ public class FolderReplacer {
                     return;
                 }
                 if (isZipFile(file.getFilePath())) {
-                    processZip(file.getFilePath(), relativeFile.getFilePath(), false, false);
+                    submitter.accept(relativeFile.toString(), () ->
+                            processZip(file.getFilePath(), relativeFile.getFilePath(), false, false));
                 } else {
-                    try (BufferedReader bufferedReader = Files.newBufferedReader(file.getFilePath())) {
-                        FileCompleted fileCompleted = fileReplacer.replace(relativeFile, bufferedReader);
-                        fileCompletedListener.onFileCompleted(fileCompleted);
-                    } catch (IOException e) {
-                        throw new RuntimeException("Failed to process file: " + relativeFile, e);
-                    }
+                    submitter.accept(relativeFile.toString(), () -> {
+                        try (BufferedReader bufferedReader = Files.newBufferedReader(file.getFilePath())) {
+                            FileCompleted fileCompleted = fileReplacer.replace(relativeFile, bufferedReader);
+                            fileCompletedListener.onFileCompleted(fileCompleted);
+                        } catch (IOException e) {
+                            throw new RuntimeException("Failed to process file: " + relativeFile, e);
+                        }
+                    });
                 }
             });
         }
@@ -88,7 +92,7 @@ public class FolderReplacer {
 
         try (FileLocation zipRoot = FileLocation.forZipRoot(file, relativeFile)) {
             //Read and scan zip contents as it were unpacked, but take care of further writes
-            replace(zipRoot);
+            replace(zipRoot, JobRunner.DIRECT_RUNNER);
             //auto close zip in the end
         } catch (Exception e) {
             throw new RuntimeException(String.format("Failed to process zip file: %s", file), e);

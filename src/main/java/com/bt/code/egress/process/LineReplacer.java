@@ -72,6 +72,7 @@ public class LineReplacer {
                 comment = "CONFLICT with " + matchParam.getConflict().getReason() + ", " + wordMatch.getReason() +
                         ", Suggested " + replacement;
                 replacement = null;
+                Stats.wordConflict();
             } else {
                 String withBefore = line.substring(processedPos, lineToken.getStartPos()) + replacement;
                 processed = processed == null ? withBefore : processed + withBefore;

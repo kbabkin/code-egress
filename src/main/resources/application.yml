@@ -7,6 +7,9 @@ scan:
   project: scan-project/sample
   config: "${scan.project}/config"
 
+read:
+  threads: 10
+
 replace:
   defaultTemplate: "w{hash}"
 
@@ -16,3 +19,6 @@ write:
   folder: ${scan.project}/target/preview
   report: ${scan.project}/target/code-report.csv
   generatedReplacement: ${scan.project}/target/generated-replacement.csv
+
+logging:
+  file: ${scan.project}/target/logs/code-egress.log

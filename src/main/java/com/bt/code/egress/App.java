@@ -3,6 +3,7 @@ package com.bt.code.egress;
 import com.bt.code.egress.process.FileLocation;
 import com.bt.code.egress.process.FileReplacer;
 import com.bt.code.egress.process.FolderReplacer;
+import com.bt.code.egress.process.JobRunner;
 import com.bt.code.egress.process.LineReplacer;
 import com.bt.code.egress.process.WordReplacer;
 import com.bt.code.egress.read.FilePathMatcher;
@@ -38,6 +39,8 @@ public class App implements ApplicationRunner {
     // Path(".") was resolved as target/classes
     @Value("${read.folder}")
     File folder;
+    @Value("${read.threads:10}")
+    int readThreads;
     @Value("${write.inplace:false}")
     boolean writeInplace;
     @Value("${write.folder}")
@@ -84,18 +87,21 @@ public class App implements ApplicationRunner {
         FolderReplacer folderReplacer = new FolderReplacer(fileReplacer, filePathMatcher,
                 reportMatcher.getAllowFilePathMatcher(), reportCollector, folderWriter);
         ReportWriter reportWriter = new ReportWriter(reportHelper, writeReport.toPath());
+        JobRunner jobRunner = new JobRunner(readThreads);
         log.info("Configured in {} ms", System.currentTimeMillis() - startedAt);
 
-        folderReplacer.replace(FileLocation.forFile(folder));
-        reportWriter.onReport(reportCollector.toReport());
+        try {
+            folderReplacer.replace(FileLocation.forFile(folder), jobRunner::submit);
+            jobRunner.run();
+            reportWriter.onReport(reportCollector.toReport());
+            wordReplacer.saveGenerated(writeGeneratedReplacement.toPath());
 
-        wordReplacer.saveGenerated(writeGeneratedReplacement.toPath());
-
-        fileReplacer.verify();
-
-        log.info("Counters: \n\t{}", new TreeMap<>(Stats.getCounters()).entrySet().stream()
-                .map(String::valueOf).collect(Collectors.joining("\n\t")));
-        log.info("Processed in {} ms", System.currentTimeMillis() - startedAt);
-        folderWriter.verify();
+        } finally {
+            fileReplacer.verify();
+            folderWriter.verify();
+            log.info("Counters: \n\t{}", new TreeMap<>(Stats.getCounters()).entrySet().stream()
+                    .map(String::valueOf).collect(Collectors.joining("\n\t")));
+            log.info("Processed in {} ms", System.currentTimeMillis() - startedAt);
+        }
     }
 }

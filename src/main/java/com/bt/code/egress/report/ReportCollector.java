@@ -5,14 +5,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.Collection;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 @RequiredArgsConstructor
 @Slf4j
 public class ReportCollector implements TextMatched.Listener {
     private final ReportHelper reportHelper;
-    private final List<Report.ReportLine> reportLines = new ArrayList<>();
+    private final Collection<Report.ReportLine> reportLines = new ConcurrentLinkedQueue<>();
 
     @Override
     public void onMatched(TextMatched textMatched) {
@@ -29,6 +29,6 @@ public class ReportCollector implements TextMatched.Listener {
     }
 
     public Report toReport() {
-        return new Report(Collections.unmodifiableList(reportLines));
+        return new Report(new ArrayList<>(reportLines));
     }
 }
