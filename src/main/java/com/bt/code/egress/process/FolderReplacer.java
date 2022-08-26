@@ -107,6 +107,7 @@ public class FolderReplacer {
             }
         }
 
+        Stats.zipFileRead();
         log.info("ZIP file: {} processed", file);
     }
 

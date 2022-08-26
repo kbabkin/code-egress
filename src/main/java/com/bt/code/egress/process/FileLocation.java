@@ -37,6 +37,20 @@ public class FileLocation implements AutoCloseable {
             return relativeZipPath.toString() + ":" + filePath;
         }
     }
+
+    public int size() {
+        try {
+            return (int)Files.size(filePath);
+        } catch (IOException e) {
+            log.error("Could not determine size of file:" + this, e);
+            return 0;
+        }
+    }
+
+    public boolean isCsv() {
+        return getFilePath().toString().toLowerCase().endsWith(".csv");
+    }
+
     public Stream<FileLocation> list() {
         try {
             Stream<Path> files = Files.list(filePath);

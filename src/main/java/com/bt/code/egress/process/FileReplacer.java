@@ -33,9 +33,12 @@ public class FileReplacer {
 
     public FileCompleted replace(FileLocation file, BufferedReader bufferedReader) throws IOException {
         log.info("Read file: {}", file);
-        boolean isCsv = isEligibleForCsvReplacement(file.getFilename());
-        if (isCsv) {
+
+        boolean isEligibleCsv = isEligibleForCsvReplacement(file.getFilename());
+        if (isEligibleCsv) {
+            //CSV file with respective column configuration
             log.info("CSV processing will be applied for {}", file);
+            Stats.csvFileWithColumnReplacements();
         }
 
         String line;
@@ -45,7 +48,7 @@ public class FileReplacer {
         CsvLineMatcher csvLineMatcher = null;
         try {
             while (((line = bufferedReader.readLine()) != null)) {
-                if (isCsv && lineNum == 0) {
+                if (isEligibleCsv && lineNum == 0) {
                     csvLineMatcher = new CsvLineMatcher(
                             csvConfig.get(file.getFilename()).getColumns(),
                             line, csvDelim, csvQuote,

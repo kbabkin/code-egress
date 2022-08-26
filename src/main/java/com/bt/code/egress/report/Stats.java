@@ -28,6 +28,16 @@ public class Stats {
         increment("Files Changed");
     }
 
+    public void zipFileRead() { increment("Zip Files Read"); }
+
+    public void csvFileRead() { increment("Csv Files Read"); }
+
+    public void csvFileWithColumnReplacements() { increment("Csv Files With Configured Column Replacements Detected"); }
+
+    public void bytesRead(int bytes) {
+        increment("Bytes Read", bytes);
+    }
+
     public void fileFailed() {
         increment("Failed Files");
     }
@@ -51,4 +61,5 @@ public class Stats {
     public void wordsFalsePositive(int byValue) {
         increment("Words False Positive", byValue);
     }
+
 }
