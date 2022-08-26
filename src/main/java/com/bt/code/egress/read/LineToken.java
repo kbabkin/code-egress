@@ -1,9 +1,11 @@
 package com.bt.code.egress.read;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
+@EqualsAndHashCode(exclude = {"word", "wordLowerCase"})
 public class LineToken {
     @Getter
     private final String line;
@@ -12,6 +14,7 @@ public class LineToken {
     @Getter
     private final int endPos;
 
+    private String word;
     private String wordLowerCase;
 
     public LineToken(String line) {
@@ -27,6 +30,13 @@ public class LineToken {
             wordLowerCase = line.substring(startPos, endPos).toLowerCase();
         }
         return wordLowerCase;
+    }
+
+    public String getWord() {
+        if (word == null) {
+            word = line.substring(startPos, endPos);
+        }
+        return word;
     }
 
     public boolean isWholeWord() {

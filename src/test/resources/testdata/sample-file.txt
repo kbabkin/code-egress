@@ -7,3 +7,6 @@ acme and also one more acme
 part of wordACME
 who wins? match@acme.com
 check ip 192.168.10.11
+guard@acme.com vs ignore@acme.com
+customer 123
+number 123.0

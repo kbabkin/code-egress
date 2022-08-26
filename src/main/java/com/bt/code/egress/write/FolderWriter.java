@@ -36,6 +36,13 @@ public class FolderWriter implements FileCompleted.Listener {
             Stats.fileChanged();
         }
         Stats.fileRead();
+        Stats.bytesRead(
+                fileCompleted.getOriginalLines().stream().mapToInt(String::length).sum()
+        );
+
+        if (fileCompleted.getFile().isCsv()) {
+            Stats.csvFileRead();
+        }
     }
 
     public void write(Path file, List<String> replacedLines) {

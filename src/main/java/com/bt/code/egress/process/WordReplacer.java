@@ -45,6 +45,10 @@ public class WordReplacer {
     }
 
     public String replace(WordMatch wordMatch) {
+        if (wordMatch.getReplacement() != null) {
+            return wordMatch.getReplacement(); // for csv matches
+        }
+
         String word = wordMatch.getLineToken().getWordLowerCase();
         String generated = generatedMap.get(word);
         if (generated != null) {
@@ -52,12 +56,23 @@ public class WordReplacer {
         }
         String predefined = wordMatch.getTemplate();
         String template = StringUtils.isBlank(predefined) ? defaultTemplate : predefined;
+
         return generate(word, template);
     }
 
     private String generate(String word, String template) {
+        int hashCode;
+        if (word.length() <= 0) {
+            hashCode = 0;
+        } else {
+            String hashWord = word;
+            while (hashWord.length() < 20) {
+                hashWord += hashWord;
+            }
+            hashCode = hashWord.hashCode();
+        }
         StringSubstitutor substitutor = new StringSubstitutor(
-                Collections.singletonMap("hash", Math.abs(word.hashCode())),
+                Collections.singletonMap("hash", Math.abs(hashCode)),
                 "{", "}");
         String generated = substitutor.replace(template);
         if (!generated.equals(template)) {

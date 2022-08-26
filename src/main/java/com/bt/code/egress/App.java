@@ -1,9 +1,9 @@
 package com.bt.code.egress;
 
-import com.bt.code.egress.process.CsvFileReplacer;
 import com.bt.code.egress.process.FileLocation;
 import com.bt.code.egress.process.FileReplacer;
 import com.bt.code.egress.process.FolderReplacer;
+import com.bt.code.egress.process.JobRunner;
 import com.bt.code.egress.process.LineReplacer;
 import com.bt.code.egress.process.WordReplacer;
 import com.bt.code.egress.read.FilePathMatcher;
@@ -39,6 +39,8 @@ public class App implements ApplicationRunner {
     // Path(".") was resolved as target/classes
     @Value("${read.folder}")
     File folder;
+    @Value("${read.threads:10}")
+    int readThreads;
     @Value("${write.inplace:false}")
     boolean writeInplace;
     @Value("${write.folder}")
@@ -54,6 +56,16 @@ public class App implements ApplicationRunner {
     @Value("${scan.config}")
     String scanConfig;
 
+    @Value("${csv.delim:,}")
+    String csvDelim;
+    @Value("${csv.quote:\"}")
+    String csvQuote;
+
+    @Value("${context.keepLength:15}")
+    int contextKeepLength;
+    @Value("${context.minCompareLength:2}")
+    int contextMinCompareLength;
+
     @Autowired
     Config config;
 
@@ -65,26 +77,31 @@ public class App implements ApplicationRunner {
         long startedAt = System.currentTimeMillis();
         FilePathMatcher filePathMatcher = FilePathMatcher.fromConfig(config.read);
         LineGuardIgnoreMatcher lineMatcher = LineGuardIgnoreMatcher.fromConfigsOptimized(config.word);
-        ReportHelper reportHelper = new ReportHelper(15);
+        ReportHelper reportHelper = new ReportHelper(contextKeepLength, contextMinCompareLength);
         ReportMatcher reportMatcher = ReportMatcher.fromConfigs(reportHelper, config.getAllow().getReportFiles());
         WordReplacer wordReplacer = new WordReplacer(replaceDefaultTemplate);
         LineReplacer lineReplacer = new LineReplacer(lineMatcher, reportMatcher, wordReplacer);
         ReportCollector reportCollector = new ReportCollector(reportHelper);
-        FileReplacer fileReplacer = new FileReplacer(lineReplacer, reportCollector);
+        FileReplacer fileReplacer = new FileReplacer(lineReplacer, reportCollector, config.csv, csvDelim, csvQuote);
         FolderWriter folderWriter = writeInplace ? new FolderWriter(folder.toPath()) : new EmptyFolderWriter(writeFolder.toPath());
-        CsvFileReplacer csvFileReplacer = new CsvFileReplacer(config.csv);
-        FolderReplacer folderReplacer = new FolderReplacer(fileReplacer, csvFileReplacer, filePathMatcher, folderWriter);
+        FolderReplacer folderReplacer = new FolderReplacer(fileReplacer, filePathMatcher,
+                reportMatcher.getAllowFilePathMatcher(), reportCollector, folderWriter);
         ReportWriter reportWriter = new ReportWriter(reportHelper, writeReport.toPath());
+        JobRunner jobRunner = new JobRunner(readThreads);
         log.info("Configured in {} ms", System.currentTimeMillis() - startedAt);
 
-        folderReplacer.replace(FileLocation.forFile(folder));
-        reportWriter.onReport(reportCollector.toReport());
+        try {
+            folderReplacer.replace(FileLocation.forFile(folder), jobRunner::submit);
+            jobRunner.run();
+            reportWriter.onReport(reportCollector.toReport());
+            wordReplacer.saveGenerated(writeGeneratedReplacement.toPath());
 
-        wordReplacer.saveGenerated(writeGeneratedReplacement.toPath());
-
-        log.info("Counters: \n\t{}", new TreeMap<>(Stats.getCounters()).entrySet().stream()
-                .map(String::valueOf).collect(Collectors.joining("\n\t")));
-        log.info("Processed in {} ms", System.currentTimeMillis() - startedAt);
-        folderWriter.verify();
+        } finally {
+            fileReplacer.verify();
+            folderWriter.verify();
+            log.info("Counters: \n\t{}", new TreeMap<>(Stats.getCounters()).entrySet().stream()
+                    .map(String::valueOf).collect(Collectors.joining("\n\t")));
+            log.info("Processed in {} ms", System.currentTimeMillis() - startedAt);
+        }
     }
 }

@@ -8,7 +8,7 @@ import java.util.Set;
 
 @RequiredArgsConstructor
 public class FilePathMatcher {
-    private final AntPathMatcher pathMatcher = new AntPathMatcher("/");
+    private static final AntPathMatcher pathMatcher = new AntPathMatcher("/");
     private final Set<String> guard;
     private final Set<String> ignore;
 
@@ -19,7 +19,13 @@ public class FilePathMatcher {
 
     public boolean match(String name) {
         String slashed = name.replaceAll("\\\\", "/");
-        return guard.stream().anyMatch(p -> pathMatcher.match(p, slashed))
-                && ignore.stream().noneMatch(p -> pathMatcher.match(p, slashed));
+        boolean xorFolder = !slashed.endsWith("/");
+        return guard.stream().filter(p -> xorFolder ^ p.endsWith("/")).anyMatch(p -> pathMatcher.match(p, slashed))
+                && ignore.stream().filter(p -> xorFolder ^ p.endsWith("/")).noneMatch(p -> pathMatcher.match(p, slashed));
+    }
+
+    public static boolean match(String pattern, String name) {
+        String slashed = name.replaceAll("\\\\", "/");
+        return pathMatcher.match(pattern, slashed);
     }
 }

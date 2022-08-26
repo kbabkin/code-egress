@@ -2,6 +2,7 @@ package com.bt.code.egress.read;
 
 import com.bt.code.egress.Config;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -52,10 +53,16 @@ public class BasicLineMatcher implements LineMatcher {
         if (!lineToken.isWholeWord()) {
             return result;
         }
+        // template from value has priority over template from pattern
+        if (result.stream()
+                .filter(m -> lineToken.equals(m.getLineToken()))
+                .anyMatch(m -> StringUtils.isNotBlank(m.getReplacement()) || StringUtils.isNotBlank(m.getTemplate()))) {
+            return result;
+        }
         if (result.isEmpty()) {
             result = new ArrayList<>();
         }
-        result.add(new WordMatch(lineToken, matchReason, template));
+        result.add(new WordMatch(lineToken, matchReason, template, null));
         return result;
 
     }

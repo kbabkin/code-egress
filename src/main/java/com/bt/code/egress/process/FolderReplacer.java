@@ -1,6 +1,8 @@
 package com.bt.code.egress.process;
 
 import com.bt.code.egress.read.FilePathMatcher;
+import com.bt.code.egress.read.LineLocation;
+import com.bt.code.egress.read.LineToken;
 import com.bt.code.egress.report.Stats;
 import com.bt.code.egress.write.FileCompleted;
 import lombok.RequiredArgsConstructor;
@@ -13,21 +15,23 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 @RequiredArgsConstructor
 @Slf4j
 public class FolderReplacer {
     private final FileReplacer fileReplacer;
-    private final CsvFileReplacer csvFileReplacer;
     private final FilePathMatcher filePathMatcher;
+    private final FilePathMatcher allowFilePathMatcher;
+    private final TextMatched.Listener textMatchedListener;
     private final FileCompleted.Listener fileCompletedListener;
 
-    public void replace(FileLocation folder) {
-        replace(folder, folder);
+    public void replace(FileLocation folder, BiConsumer<String, Runnable> submitter) {
+        replace(folder, folder, submitter);
     }
 
-    void replace(FileLocation folder, FileLocation rootFolder) {
+    void replace(FileLocation folder, FileLocation rootFolder, BiConsumer<String, Runnable> submitter) {
         if (!Files.isDirectory(folder.getFilePath())) {
             throw new RuntimeException("Not a folder: " + folder);
         }
@@ -38,7 +42,7 @@ public class FolderReplacer {
                 String name = relativeFile.toString().toLowerCase();
                 if (Files.isDirectory(file.getFilePath())) {
                     if (filePathMatcher.match(name + "/")) {
-                        replace(file, rootFolder);
+                        replace(file, rootFolder, submitter);
                     } else {
                         log.info("Ignore folder: {}", relativeFile);
                         Stats.folderIgnored();
@@ -50,29 +54,25 @@ public class FolderReplacer {
                     Stats.fileIgnored();
                     return;
                 }
+                if (allowFilePathMatcher.match(name)) {
+                    log.info("Ignore file due to previous failure: {}", relativeFile);
+                    Stats.fileFailed();
+                    textMatchedListener.onMatched(new TextMatched(new LineLocation(name, 0),
+                            new LineToken(""), true, "", "Ignore file due to previous failure"));
+                    return;
+                }
                 if (isZipFile(file.getFilePath())) {
-                    processZip(file.getFilePath(), relativeFile.getFilePath(), false, false);
+                    submitter.accept(relativeFile.toString(), () ->
+                            processZip(file.getFilePath(), relativeFile.getFilePath(), false, false));
                 } else {
-                    //we need csv replacer then regular replacer (or visa versa -) )
-                    //TODO create a chain of 2 replacers
-                    if (csvFileReplacer.isEnabled()) {
-                        try {
-                            if (csvFileReplacer.isEligibleForReplacement(file.getFilename())) {
-                                FileCompleted fileCompleted = csvFileReplacer.replace(file);
-                                fileCompletedListener.onFileCompleted(fileCompleted);
-                            }
-                        } catch (IOException e) {
-                            throw new RuntimeException("Failed to process file: " + relativeFile, e);
-                        }
-
-                    } else {
+                    submitter.accept(relativeFile.toString(), () -> {
                         try (BufferedReader bufferedReader = Files.newBufferedReader(file.getFilePath())) {
                             FileCompleted fileCompleted = fileReplacer.replace(relativeFile, bufferedReader);
                             fileCompletedListener.onFileCompleted(fileCompleted);
                         } catch (IOException e) {
                             throw new RuntimeException("Failed to process file: " + relativeFile, e);
                         }
-                    }
+                    });
                 }
             });
         }
@@ -92,7 +92,7 @@ public class FolderReplacer {
 
         try (FileLocation zipRoot = FileLocation.forZipRoot(file, relativeFile)) {
             //Read and scan zip contents as it were unpacked, but take care of further writes
-            replace(zipRoot);
+            replace(zipRoot, JobRunner.DIRECT_RUNNER);
             //auto close zip in the end
         } catch (Exception e) {
             throw new RuntimeException(String.format("Failed to process zip file: %s", file), e);
@@ -111,6 +111,7 @@ public class FolderReplacer {
             }
         }
 
+        Stats.zipFileRead();
         log.info("ZIP file: {} processed", file);
     }
 

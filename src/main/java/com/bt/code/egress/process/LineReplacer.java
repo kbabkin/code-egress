@@ -1,5 +1,6 @@
 package com.bt.code.egress.process;
 
+import com.bt.code.egress.read.CsvLineMatcher;
 import com.bt.code.egress.read.LineGuardIgnoreMatcher;
 import com.bt.code.egress.read.LineLocation;
 import com.bt.code.egress.read.LineToken;
@@ -9,13 +10,17 @@ import com.bt.code.egress.report.Stats;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
+@Slf4j
 public class LineReplacer {
 
     private final LineGuardIgnoreMatcher lineMatcher;
@@ -30,14 +35,19 @@ public class LineReplacer {
         WordMatch conflict;
     }
 
-    public String replace(String line, LineLocation lineLocation, TextMatched.Listener textMatchedListener) {
-        List<WordMatch> rawMatches = lineMatcher.getMatches(line);
-        if (rawMatches.isEmpty()) {
+    public String replace(String line, LineLocation lineLocation, TextMatched.Listener textMatchedListener, @Nullable CsvLineMatcher csvLineMatcher) {
+        List<WordMatch> matches = lineMatcher.getMatches(line);
+        if (matches.isEmpty()) {
             return line;
+        } else {
+            if (csvLineMatcher != null) {
+                List<WordMatch> csvMatches = csvLineMatcher.getMatches(line);
+                matches.addAll(csvMatches);
+            }
         }
-        Stats.wordsMatched(rawMatches.size());
+        Stats.wordsMatched(matches.size());
 
-        List<MatchParam> matchParams = rawMatches.stream()
+        List<MatchParam> matchParams = matches.stream()
                 // reportMatcher can return null
                 .map(rm -> new MatchParam(rm, reportMatcher.getAllowed(rm.getLineToken(), lineLocation), null))
                 .collect(Collectors.toList());
@@ -62,6 +72,7 @@ public class LineReplacer {
                 comment = "CONFLICT with " + matchParam.getConflict().getReason() + ", " + wordMatch.getReason() +
                         ", Suggested " + replacement;
                 replacement = null;
+                Stats.wordConflict();
             } else {
                 String withBefore = line.substring(processedPos, lineToken.getStartPos()) + replacement;
                 processed = processed == null ? withBefore : processed + withBefore;
@@ -83,8 +94,11 @@ public class LineReplacer {
             return;
         }
 
-        // longer matches - higher priority
-        matchParams.sort(Comparator.<MatchParam, Integer>comparing(m -> m.getWordMatch().getLineToken().getLength()).reversed());
+        // longer matches - higher priority, for same length - exact replacement is better than template
+        matchParams.sort(Comparator.<MatchParam, Integer>comparing(m -> m.getWordMatch().getLineToken().getLength()).reversed()
+                .thenComparing(mp -> StringUtils.isBlank(mp.getWordMatch().getReplacement()) ? 1 : 0)
+                .thenComparing(mp -> StringUtils.isBlank(mp.getWordMatch().getTemplate()) ? 2 :
+                        mp.getWordMatch().getTemplate().contains("{") ? 1 : 0));
 
         // temp store of included matches
         List<MatchParam> toReplace = new ArrayList<>();
@@ -97,5 +111,4 @@ public class LineReplacer {
                 .filter(m1 -> !Boolean.TRUE.equals(m1.getAllowed()))
                 .forEach(toReplace::add);
     }
-
 }

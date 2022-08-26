@@ -20,16 +20,36 @@ Maintain consistent results among multiple sequential scans and pre-release scan
 Report contains violations of configured rules, one per line in CSV format.
 File can be viewed and edited by IDE plugin, Excel, plain text editor.
 
-Example row:
+Example report row:
 
-| Allow | Text           | Context                 | File | Line | Replacement | Comment                 |
-|-------|----------------|-------------------------|------|------|-------------|-------------------------|
-|       | 192.168.10.11 | check ip 192.168.10.11 | src/test/resources/sample-file.txt | 9 | h1163712847.domain.local | Pattern \d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3} |
+| Allow | Text          | Context                | File                      | Line | Replacement              | Comment                                    |
+|-------|---------------|------------------------|---------------------------|------|--------------------------|--------------------------------------------|
+|       | 192.168.10.11 | check ip 192.168.10.11 | resources/sample-file.txt | 9    | h1163712847.domain.local | Pattern \d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3} |
 
-Set colum **"Allow"** value to mark violation for following scans and cleanup:
-- **"true"** - marks violation as false-positive to be excluded from replacement. Values "yes", "y", "1" are also accepted.
-- **"false"** - reviewed, true-positive, not allowed, will be replaced. Value is kept in next scan, used to differentiate reviewed and not reviewed lines.
-- empty value - not allowed, not reviewed, will be replaced.
+### Report File Matching
+Review and modify report file *code-report.csv* to mark false-positives or copy part of it to config *allow-report.csv* to use in next scans.
+Report file *code-report.csv* is overridden after each scan.
+
+How columns are used during scans and cleanup:
+- **"Allow"** mark false-positive after manual review:
+  - **"true"** - marks violation as false-positive to be excluded from replacement. Values "yes", "y", "1" are also accepted.
+  - **"false"** - reviewed, true-positive, not allowed, will be replaced. Value is kept in next scan, used to differentiate reviewed and not reviewed lines.
+  - empty value - not allowed, not reviewed, will be replaced.
+- **Text** - found text
+- **Context** - few characters before and after Text. Can be exact value from report or more narrow string.
+- **File** - file path matching, wildcards allowed.
+- **Line**, **Replacement**, **Comment** - ignored.
+
+Example matching rows:
+
+| Allow | Text          | Context                | File                      | Line | Replacement       | Comment                                     |
+|-------|---------------|------------------------|---------------------------|------|-------------------|---------------------------------------------|
+| true  | 192.168.10.11 | check ip 192.168.10.11 | resources/sample-file.txt | 9    | h116.domain.local | Line copied from report                     |
+| true  | 192.168.10.11 | check ip 192.168.10.11 | resources/sample-file.txt |      |                   | Removed unused fields                       |
+| true  | 192.168.10.11 | ip 192.168.10.11       | resources/sample-file.txt |      |                   | Partial context                             |
+| true  | 192.168.10.11 |                        | resources/sample-file.txt |      |                   | In file with any context                    |
+| true  | 192.168.10.11 | ip 192.168.10.11       | **/sample-*.txt           |      |                   | File path matching                          |
+| true  |               |                        | resources/sample-file.txt |      |                   | Ignore whole file due to previous exception |
 
 ## Configuration
 Check [src/main/resources/application.yml](src/main/resources/application.yml) and [scan-project/sample/config/scan-application.yml](scan-project/sample/config/scan-application.yml)
@@ -69,5 +89,12 @@ scan-project                    # folder to collect scan configuration for mutli
 - Start **-Dscan.project=scan-project/myproject com.bt.code.egress.App**
 
 ### Test configuration
+Can be used to check how it works, verify configuration parts, reproduce bugs, etc.
 
 - Start **com.bt.code.egress.TestApp**
+
+Test folders:
+ 
+- src/test/resources/config - configuration.
+- src/test/resources/testdata - test files - TXT, CSV, ZIP, etc.
+- target/scan-project/target - output files.
