@@ -1,6 +1,7 @@
 read:
   # !!! Project folder to be scanned - provide actual value !!!
   folder: "/work/project/scanned-sample"
+
   guard:
     # file folder (ending with '/') and file name patterns to include in scan
     # wildcards: https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/util/AntPathMatcher.html
