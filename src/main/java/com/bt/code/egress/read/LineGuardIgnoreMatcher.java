@@ -2,6 +2,7 @@ package com.bt.code.egress.read;
 
 import com.bt.code.egress.Config;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -10,6 +11,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
+@Slf4j
 public class LineGuardIgnoreMatcher implements LineMatcher {
 
     private final LineMatcher guardMatcher;
@@ -37,6 +39,7 @@ public class LineGuardIgnoreMatcher implements LineMatcher {
         words.keySet().retainAll(wholeWords);
         HashMap<String, String> phrases = new HashMap<>(guardVnP.getValues());
         phrases.keySet().removeAll(wholeWords);
+        log.info("Config: {} whole words, {} phrases", words.size(), phrases.size());
 
         LineMatcher guard = new BasicLineMatcher(phrases, guardVnP.getPatterns())
                 .and(new LineTokenMatcher(new BasicWordMatcher(words, Collections.emptyMap())));
