@@ -39,6 +39,7 @@ public class FolderWriter implements FileCompleted.Listener {
         Stats.bytesRead(
                 fileCompleted.getOriginalLines().stream().mapToInt(String::length).sum()
         );
+        Stats.linesRead(fileCompleted.getOriginalLines().size());
 
         if (fileCompleted.getFile().isCsv()) {
             Stats.csvFileRead();

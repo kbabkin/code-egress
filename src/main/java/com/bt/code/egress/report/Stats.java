@@ -45,6 +45,10 @@ public class Stats {
         increment("Bytes Read", bytes);
     }
 
+    public void linesRead(int lines) {
+        increment("Lines Read", lines);
+    }
+
     public void fileFailed() {
         increment("Failed Files");
     }
