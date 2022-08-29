@@ -49,7 +49,7 @@ public class JobRunner {
             for (int i = 0; i < tasks.size(); i++) {
                 Future<String> take = completionService.take();
                 try {
-                    log.info("Done {}", take.get());
+                    log.info("Done {} of {}, {}", i + 1, tasks.size(), take.get());
                 } catch (InterruptedException e) {
                     log.info("Interrupted", e);
                     Thread.currentThread().interrupt();
