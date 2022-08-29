@@ -69,10 +69,10 @@ public class LineReplacer {
                 comment = "Allowed, " + wordMatch.getReason() + ", Suggested " + replacement;
                 replacement = null;
             } else if (matchParam.getConflict() != null) {
-                comment = "CONFLICT with " + matchParam.getConflict().getReason() + ", " + wordMatch.getReason() +
-                        ", Suggested " + replacement;
-                replacement = null;
+                log.info("CONFLICT OF {}->{} ({}) WITH {} ({})", wordMatch.getLineToken().getWord(), replacement, wordMatch.getReason(),
+                        matchParam.getConflict().getLineToken().getWord(), matchParam.getConflict().getReason());
                 Stats.wordConflict();
+                continue;
             } else {
                 String withBefore = line.substring(processedPos, lineToken.getStartPos()) + replacement;
                 processed = processed == null ? withBefore : processed + withBefore;
