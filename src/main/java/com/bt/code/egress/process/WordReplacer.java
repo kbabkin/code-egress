@@ -14,14 +14,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 @RequiredArgsConstructor
 @Slf4j
 public class WordReplacer {
-    private final Map<String, String> generatedMap = new HashMap<>();
+    private final Map<String, String> generatedMap = new ConcurrentHashMap<>();
     private final String defaultTemplate;
 
     public void saveGenerated(Path generatedReplacementsPath) {
