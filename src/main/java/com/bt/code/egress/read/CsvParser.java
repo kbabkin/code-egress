@@ -66,7 +66,11 @@ public class CsvParser {
         String[] header = readCsvLineAsStrings(firstLine);
         Map<String, Integer> columnIndex = Maps.newHashMap();
         for (int i = 0; i < header.length; i++) {
-            columnIndex.put(header[i], i);
+            String columnHeader = header[i];
+            if (columnHeader.startsWith(quote) && columnHeader.endsWith(quote) && columnHeader.length() > 1) {
+                columnHeader = columnHeader.substring(1, columnHeader.length() - 1);
+            }
+            columnIndex.put(columnHeader, i);
         }
         return columnIndex;
     }

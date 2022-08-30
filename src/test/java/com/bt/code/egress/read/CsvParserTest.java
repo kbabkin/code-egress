@@ -12,10 +12,10 @@ class CsvParserTest {
 
     @Test
     void testReadCsvLine() {
-    CsvParser csvParser = new CsvParser("id,name,description", ",", "\"");
+        CsvParser csvParser = new CsvParser("id,name,description", ",", "\"");
 
-    String[] result1 = csvParser.readCsvLineAsStrings("1,John,new employee");
-    assertArrayEquals(new String[]{"1", "John", "new employee"}, result1);
+        String[] result1 = csvParser.readCsvLineAsStrings("1,John,new employee");
+        assertArrayEquals(new String[]{"1", "John", "new employee"}, result1);
 
         String[] result2 = csvParser.readCsvLineAsStrings("2,\"Mary Lee\",new employee");
         assertArrayEquals(new String[]{"2", "\"Mary Lee\"", "new employee"}, result2);
@@ -38,10 +38,15 @@ class CsvParserTest {
     }
 
     @Test
-    void getColumnIndex() {
-        CsvParser csvParser = new CsvParser("id,name,description", ",", "\"");
-        assertEquals(0, csvParser.getColumnIndex("id"));
-        assertEquals(1, csvParser.getColumnIndex("name"));
-        assertEquals(2, csvParser.getColumnIndex("description"));
+    void testGetColumnIndex() {
+        CsvParser csvParser1 = new CsvParser("id,name,description", ",", "\"");
+        assertEquals(0, csvParser1.getColumnIndex("id"));
+        assertEquals(1, csvParser1.getColumnIndex("name"));
+        assertEquals(2, csvParser1.getColumnIndex("description"));
+
+        CsvParser csvParser2 = new CsvParser("\"id\",\"name\",\"description\"", ",", "\"");
+        assertEquals(0, csvParser2.getColumnIndex("id"));
+        assertEquals(1, csvParser2.getColumnIndex("name"));
+        assertEquals(2, csvParser2.getColumnIndex("description"));
     }
 }
