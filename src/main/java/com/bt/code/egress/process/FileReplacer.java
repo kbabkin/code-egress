@@ -3,7 +3,6 @@ package com.bt.code.egress.process;
 import com.bt.code.egress.Config;
 import com.bt.code.egress.read.CsvLineMatcher;
 import com.bt.code.egress.read.LineLocation;
-import com.bt.code.egress.read.LineToken;
 import com.bt.code.egress.report.Stats;
 import com.bt.code.egress.write.FileCompleted;
 import com.google.common.collect.Maps;
@@ -18,7 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -46,23 +44,16 @@ public class FileReplacer {
         ArrayList<String> originalLines = new ArrayList<>();
         List<String> replacedLines = new ArrayList<>();
         CsvLineMatcher csvLineMatcher = null;
-        try {
-            while (((line = bufferedReader.readLine()) != null)) {
-                if (isEligibleCsv && lineNum == 0) {
-                    csvLineMatcher = new CsvLineMatcher(
-                            csvConfig.get(file.getFilename()).getColumns(),
-                            line, csvDelim, csvQuote,
-                            file.getFilename());
-                }
-                String replace = lineReplacer.replace(line, new LineLocation(file.toReportedPath(), ++lineNum), textMatchedListener, csvLineMatcher);
-                originalLines.add(line);
-                replacedLines.add(replace);
+        while (((line = bufferedReader.readLine()) != null)) {
+            if (isEligibleCsv && lineNum == 0) {
+                csvLineMatcher = new CsvLineMatcher(
+                        csvConfig.get(file.getFilename()).getColumns(),
+                        line, csvDelim, csvQuote,
+                        file.getFilename());
             }
-        } catch (Exception e) {
-            log.error("Failed to process file {}", file, e);
-            Stats.fileFailed();
-            textMatchedListener.onMatched(new TextMatched(new LineLocation(file.toReportedPath(), 0),
-                    new LineToken(""), null, "", "FAILED to read file " + file));
+            String replace = lineReplacer.replace(line, new LineLocation(file.toReportedPath(), ++lineNum), textMatchedListener, csvLineMatcher);
+            originalLines.add(line);
+            replacedLines.add(replace);
         }
         if (csvLineMatcher != null && !CollectionUtils.isEmpty(csvLineMatcher.getErrors())) {
             errors.put(file.toReportedPath(), csvLineMatcher.getErrors());
@@ -84,9 +75,7 @@ public class FileReplacer {
                         errors.get(file).size(),
                         file));
                 sbErrors.append("=======================================================\n\t");
-                sbErrors.append(errors.get(file)
-                        .stream()
-                        .collect(Collectors.joining("\n\t")));
+                sbErrors.append(String.join("\n\t", errors.get(file)));
             }
             log.info(sbErrors.toString());
         }

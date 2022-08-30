@@ -12,6 +12,8 @@ import net.lingala.zip4j.ZipFile;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.MalformedInputException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -57,7 +59,7 @@ public class FolderReplacer {
                 if (allowFilePathMatcher.match(name)) {
                     log.info("Ignore file due to previous failure: {}", relativeFile);
                     Stats.fileFailed();
-                    textMatchedListener.onMatched(new TextMatched(new LineLocation(name, 0),
+                    textMatchedListener.onMatched(new TextMatched(new LineLocation(relativeFile.toReportedPath(), 0),
                             new LineToken(""), true, "", "Ignore file due to previous failure"));
                     return;
                 }
@@ -66,11 +68,22 @@ public class FolderReplacer {
                             processZip(file.getFilePath(), relativeFile.getFilePath(), false, false));
                 } else {
                     submitter.accept(relativeFile.toString(), () -> {
-                        try (BufferedReader bufferedReader = Files.newBufferedReader(file.getFilePath())) {
-                            FileCompleted fileCompleted = fileReplacer.replace(relativeFile, bufferedReader);
+                        try {
+                            FileCompleted fileCompleted;
+                            try (BufferedReader bufferedReader = Files.newBufferedReader(file.getFilePath())) {
+                                fileCompleted = fileReplacer.replace(relativeFile, bufferedReader);
+                            } catch (MalformedInputException e) {
+                                log.error("UTF-8 encoding incompatible, trying ISO_8859_1: {}", relativeFile);
+                                try (BufferedReader bufferedReader = Files.newBufferedReader(file.getFilePath(), StandardCharsets.ISO_8859_1)) {
+                                    fileCompleted = fileReplacer.replace(relativeFile, bufferedReader);
+                                }
+                            }
                             fileCompletedListener.onFileCompleted(fileCompleted);
-                        } catch (IOException e) {
-                            throw new RuntimeException("Failed to process file: " + relativeFile, e);
+                        } catch (Exception e) {
+                            log.error("Failed to process file {}", relativeFile, e);
+                            Stats.fileFailed();
+                            textMatchedListener.onMatched(new TextMatched(new LineLocation(relativeFile.toReportedPath(), 0),
+                                    new LineToken(""), null, "", "FAILED to process file " + relativeFile));
                         }
                     });
                 }
