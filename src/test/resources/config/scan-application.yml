@@ -74,45 +74,37 @@ csv:
   files:
     - filename: "*LegalEntity*.csv"
       columns:
-        replace:
-          "name": "legalEntityId"
-          "fullName": "legalEntityId"
-          "mnemonic": "legalEntityId"
-          "cisNumber": "legalEntityId"
-          "pbgoLegalEntityId": "legalEntityId"
-          "cportLegalEntityId": "legalEntityId"
-          "subAccountNm": "legalEntityId"
-          #Don't mask w8TaxForm
-          "crdsLeId": "legalEntityId"
-          "cftcCpty": "legalEntityId"
+        "name": "n{legalEntityId}"
+        "fullName": "fn{legalEntityId}"
+        "mnemonic": "mn{legalEntityId}"
+        "cisNumber": "{legalEntityId}"
+        "pbgoLegalEntityId": "{legalEntityId}"
+        "cportLegalEntityId": "{legalEntityId}"
+        "subAccountNm": "sa{legalEntityId}"
+        #Don't mask w8TaxForm
+        "crdsLeId": "{legalEntityId}"
+        "cftcCpty": "cpt{legalEntityId}"
     - filename: "*EM_User*.csv"
       columns:
-        replace:
-          "lastName": "userId"
-          "firstName": "userId"
-          "userName": "userId"
-        clear:
-          - "emailAddress"
+        "lastName": "ln{userId}"
+        "firstName": "fn{userId}"
+        "userName": "un{userId}"
+        "emailAddress": ""
     - filename: "*Institution*.csv"
       columns:
-        replace:
-          "name": "institutionId"
-          "fullName": "institutionId"
-          "mnemonic": "institutionId"
-          "cisNumber": "institutionId"
+        "name": "n{institutionId}"
+        "fullName": "fn{institutionId}"
+        "mnemonic": "mn{institutionId}"
+        "cisNumber": "{institutionId}"
     - filename: "*Book*.csv"
       columns:
-        replace:
-          "name": "bookId"
-          "fullName": "bookId"
-          "mnemonic": "bookId"
-          "adpAcctNum": "bookId"
+        "name": "n{bookId}"
+        "fullName": "fn{bookId}"
+        "mnemonic": "mn{bookId}"
+        "adpAcctNum": "ac{bookId}"
     - filename: test.csv
       columns:
-        replace:
-          "shortName": "id"
-          "longName": "id"
-        clear:
-          - "email"
-        fill:
-          "address": "N/A"
+        "shortName": "sn{id}"
+        "longName": "ln{id}"
+        "email": ""
+        "address": "N/A"

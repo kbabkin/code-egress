@@ -23,7 +23,7 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 @Slf4j
 public class FolderReplacer {
-    private final FileReplacer fileReplacer;
+    private final CsvFileReplacer fileReplacer;
     private final FilePathMatcher filePathMatcher;
     private final FilePathMatcher allowFilePathMatcher;
     private final TextMatched.Listener textMatchedListener;

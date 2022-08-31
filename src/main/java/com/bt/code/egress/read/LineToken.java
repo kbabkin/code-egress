@@ -1,5 +1,6 @@
 package com.bt.code.egress.read;
 
+import com.bt.code.egress.report.ReportHelper;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -51,6 +52,10 @@ public class LineToken {
 
     public static boolean isAlphanumeric(int codePoint) {
         return Character.isAlphabetic(codePoint) || Character.isDigit(codePoint);
+    }
+
+    public String getContext(ReportHelper reportHelper) {
+        return reportHelper.getContext(this);
     }
 
     @Override

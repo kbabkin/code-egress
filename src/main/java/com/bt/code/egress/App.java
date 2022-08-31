@@ -1,10 +1,11 @@
 package com.bt.code.egress;
 
+import com.bt.code.egress.process.CsvFileReplacer;
 import com.bt.code.egress.process.FileLocation;
-import com.bt.code.egress.process.FileReplacer;
 import com.bt.code.egress.process.FolderReplacer;
 import com.bt.code.egress.process.JobRunner;
 import com.bt.code.egress.process.LineReplacer;
+import com.bt.code.egress.process.TextFileReplacer;
 import com.bt.code.egress.process.WordReplacer;
 import com.bt.code.egress.read.FilePathMatcher;
 import com.bt.code.egress.read.LineGuardIgnoreMatcher;
@@ -25,8 +26,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Import;
 
 import java.io.File;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
 
 @SpringBootApplication
 @Import(Config.class)
@@ -82,9 +81,11 @@ public class App implements ApplicationRunner {
         WordReplacer wordReplacer = new WordReplacer(replaceDefaultTemplate);
         LineReplacer lineReplacer = new LineReplacer(lineMatcher, reportMatcher, wordReplacer);
         ReportCollector reportCollector = new ReportCollector(reportHelper);
-        FileReplacer fileReplacer = new FileReplacer(lineReplacer, reportCollector, config.csv, csvDelim, csvQuote);
+        TextFileReplacer textFileReplacer = new TextFileReplacer(lineReplacer, reportCollector);
+        CsvFileReplacer csvFileReplacer = new CsvFileReplacer(textFileReplacer, lineReplacer,
+                reportMatcher, reportHelper, reportCollector, config.csv, csvDelim, csvQuote);
         FolderWriter folderWriter = writeInplace ? new FolderWriter(folder.toPath()) : new EmptyFolderWriter(writeFolder.toPath());
-        FolderReplacer folderReplacer = new FolderReplacer(fileReplacer, filePathMatcher,
+        FolderReplacer folderReplacer = new FolderReplacer(csvFileReplacer, filePathMatcher,
                 reportMatcher.getAllowFilePathMatcher(), reportCollector, folderWriter);
         ReportWriter reportWriter = new ReportWriter(reportHelper, writeReport.toPath());
         JobRunner jobRunner = new JobRunner(readThreads);
@@ -95,12 +96,9 @@ public class App implements ApplicationRunner {
             jobRunner.run();
             reportWriter.onReport(reportCollector.toReport());
             wordReplacer.saveGenerated(writeGeneratedReplacement.toPath());
-
         } finally {
-            fileReplacer.verify();
             folderWriter.verify();
-            log.info("Counters: \n\t{}", new TreeMap<>(Stats.getCounters()).entrySet().stream()
-                    .map(String::valueOf).collect(Collectors.joining("\n\t")));
+            Stats.dump();
             log.info("Processed in {} ms", System.currentTimeMillis() - startedAt);
         }
     }

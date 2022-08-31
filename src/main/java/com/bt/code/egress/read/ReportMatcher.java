@@ -27,6 +27,8 @@ public class ReportMatcher {
                 .map(file -> reportHelper.read(Paths.get(file)))
                 .flatMap(Collection::stream)
                 .filter(r -> Objects.nonNull(r.getAllow()))
+                .map(rl -> new Report.ReportLine(rl.getAllow(), rl.getText().toLowerCase(), rl.getContext().toLowerCase(),
+                        rl.getFile(), rl.getLine(), rl.getReplacement(), rl.getComment()))
                 .distinct()
                 .collect(Collectors.groupingBy(Report.ReportLine::getText));
         return new ReportMatcher(reportHelper, rowsByWord);
@@ -35,19 +37,20 @@ public class ReportMatcher {
 
     public Boolean getAllowed(LineToken lineToken, LineLocation lineLocation) {
         String word = lineToken.getWordLowerCase();
+        String wordContext = lineToken.getContext(reportHelper);
         List<Report.ReportLine> reportLines = rowsByText.get(word);
         if (reportLines == null || reportLines.isEmpty()) {
             return null;
         }
 
-        String tokenContext = reportHelper.getContext(lineToken);
+        String tokenContext = wordContext.toLowerCase();
         Optional<Boolean> optionalAllowed = reportLines.stream()
                 .filter(r -> {
                     String context = r.getContext();
                     return StringUtils.isBlank(context) || context.equals(tokenContext)
                             // ability to provide only part of context
                             || tokenContext.length() > context.length() && context.length() >= word.length() + reportHelper.getContextMinCompareLength()
-                            && tokenContext.contains(context) && context.toLowerCase().contains(word);
+                            && tokenContext.contains(context) && context.contains(word);
                 })
                 .filter(r -> {
                     String file = r.getFile();
@@ -59,7 +62,7 @@ public class ReportMatcher {
                 // if both allowing and disallowing rows, use allowing one
                 .reduce((b1, b2) -> true);
 
-        optionalAllowed.ifPresent(allowed -> log.info("Report allowed: {} for {}, {}, {}", allowed, word, lineToken, lineLocation));
+        optionalAllowed.ifPresent(allowed -> log.info("Report allowed: {} for {}, {}, {}", allowed, word, wordContext, lineLocation));
         return optionalAllowed.orElse(null);
     }
 

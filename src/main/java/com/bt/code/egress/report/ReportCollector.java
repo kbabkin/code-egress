@@ -20,7 +20,7 @@ public class ReportCollector implements TextMatched.Listener {
         reportLines.add(new Report.ReportLine(
                 textMatched.getAllowed(),
                 textMatched.getLineToken().getWordLowerCase(),
-                reportHelper.getContext(textMatched.getLineToken()),
+                textMatched.getLineToken().getContext(reportHelper),
                 textMatched.getLineLocation().getFile(),
                 textMatched.getLineLocation().getLineNum(),
                 textMatched.getReplacement(),

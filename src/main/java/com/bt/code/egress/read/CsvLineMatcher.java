@@ -1,6 +1,7 @@
 package com.bt.code.egress.read;
 
 import com.bt.code.egress.Config;
+import com.bt.code.egress.report.Stats;
 import com.google.common.collect.Lists;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +18,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.apache.commons.collections.CollectionUtils.*;
+import static org.apache.commons.collections.CollectionUtils.union;
 
 @Slf4j
 public class CsvLineMatcher implements LineMatcher {
@@ -165,9 +166,9 @@ public class CsvLineMatcher implements LineMatcher {
     }
 
     protected List<WordMatch> merge(List<WordMatch> replacements,
-                                  List<WordMatch> cleanups,
-                                  List<WordMatch> fills,
-                                  String line) {
+                                    List<WordMatch> cleanups,
+                                    List<WordMatch> fills,
+                                    String line) {
         Collection<WordMatch> allMatches = union(union(replacements, cleanups), fills);
         if (CollectionUtils.isEmpty(allMatches)) {
             return Collections.emptyList();
@@ -222,6 +223,6 @@ public class CsvLineMatcher implements LineMatcher {
     }
 
     private void addError(String error) {
-        errors.add(error);
+        Stats.addError(filename, error);
     }
 }

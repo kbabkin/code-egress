@@ -1,5 +1,6 @@
 package com.bt.code.egress;
 
+import com.bt.code.egress.read.FilePathMatcher;
 import lombok.Data;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -150,21 +151,32 @@ public class Config {
 
 
     @Data
+    public static class CsvFileConfig {
+        String filename;
+        Map<String, String> columns = new LinkedHashMap<>();
+
+        public boolean matches(String filenameToMatch) {
+            return FilePathMatcher.match(filename, filenameToMatch);
+        }
+    }
+
+    @Data
     public static class CsvReplacementConfig {
         Boolean enabled;
-        List<CsvFileDescriptor> files;
+        List<CsvFileConfig> files;
 
         public boolean includes(String filename) {
             return files.stream().anyMatch(f -> f.matches(filename));
         }
 
-        public CsvFileDescriptor get(String filename) {
+        public CsvFileConfig get(String filename) {
             return files.stream().filter(f -> f.matches(filename)).findFirst().orElse(null);
         }
 
     }
 
     @Data
+    @Deprecated
     public static class CsvFileDescriptor {
         String filename;
         Columns columns;
@@ -176,6 +188,7 @@ public class Config {
     }
 
     @Data
+    @Deprecated
     public static class Columns {
         Map<String, String> replace = new LinkedHashMap<>();
         List<String> clear = new ArrayList<>();

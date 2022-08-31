@@ -1,6 +1,5 @@
 package com.bt.code.egress.process;
 
-import com.bt.code.egress.read.CsvLineMatcher;
 import com.bt.code.egress.read.LineGuardIgnoreMatcher;
 import com.bt.code.egress.read.LineLocation;
 import com.bt.code.egress.read.LineToken;
@@ -13,8 +12,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -35,17 +34,11 @@ public class LineReplacer {
         WordMatch conflict;
     }
 
-    public String replace(String line, LineLocation lineLocation, TextMatched.Listener textMatchedListener, @Nullable CsvLineMatcher csvLineMatcher) {
+    public List<MatchParam> getMatchParams(String line, LineLocation lineLocation) {
         List<WordMatch> matches = lineMatcher.getMatches(line);
         if (matches.isEmpty()) {
-            return line;
-        } else {
-            if (csvLineMatcher != null) {
-                List<WordMatch> csvMatches = csvLineMatcher.getMatches(line);
-                matches.addAll(csvMatches);
-            }
+            return Collections.emptyList();
         }
-        Stats.wordsMatched(matches.size());
 
         List<MatchParam> matchParams = matches.stream()
                 // reportMatcher can return null
@@ -53,6 +46,14 @@ public class LineReplacer {
                 .collect(Collectors.toList());
 
         markConflicts(matchParams);
+        return matchParams;
+    }
+
+    public String replace(String line, LineLocation lineLocation, TextMatched.Listener textMatchedListener) {
+        List<MatchParam> matchParams = getMatchParams(line, lineLocation);
+        if (matchParams.isEmpty()) {
+            return line;
+        }
 
         // sort by position in line
         matchParams.sort(Comparator.comparing(m -> m.getWordMatch().getLineToken().getStartPos()));
@@ -83,6 +84,7 @@ public class LineReplacer {
             textMatchedListener.onMatched(new TextMatched(lineLocation, lineToken, matchParam.getAllowed(), replacement,
                     comment));
         }
+        Stats.wordsMatched(matchParams.size());
         return processed == null ? line : processed + line.substring(processedPos);
     }
 
