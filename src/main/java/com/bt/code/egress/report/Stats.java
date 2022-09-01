@@ -1,5 +1,6 @@
 package com.bt.code.egress.report;
 
+import com.google.common.collect.Sets;
 import lombok.Getter;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -8,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -17,7 +19,7 @@ public class Stats {
     @Getter
     private final Map<String, AtomicLong> counters = new ConcurrentHashMap<>();
     @Getter
-    private final Map<String, Set<String>> errors = new ConcurrentHashMap<>();
+    private final Map<String, Set<String>> messages = new ConcurrentHashMap<>();
 
     public void increment(String name, int byValue) {
         AtomicLong value = counters.computeIfAbsent(name, k -> new AtomicLong());
@@ -85,22 +87,28 @@ public class Stats {
     }
 
     public void addError(String file, String message) {
-
+        messages.compute(file, (f, messages) -> {
+            if (messages == null) {
+                messages = new ConcurrentSkipListSet<>();
+            }
+            messages.add(message);
+            return messages;
+        });
     }
 
     public void dump() {
-        if (!errors.isEmpty()) {
-            log.info("File errors: ");
-            StringBuilder sbErrors = new StringBuilder();
-            for (String file : errors.keySet()) {
-                sbErrors.append("\n=======================================================\n");
-                sbErrors.append(String.format("%d error(s) in %s\n",
-                        errors.get(file).size(),
+        if (!messages.isEmpty()) {
+            log.info("File messages: ");
+            StringBuilder sbMessages = new StringBuilder();
+            for (String file : Sets.newTreeSet(messages.keySet())) {
+                sbMessages.append("\n=======================================================\n");
+                sbMessages.append(String.format("%d messages(s) for file: %s\n",
+                        messages.get(file).size(),
                         file));
-                sbErrors.append("=======================================================\n\t");
-                sbErrors.append(String.join("\n\t", errors.get(file)));
+                sbMessages.append("=======================================================\n\t");
+                sbMessages.append(String.join("\n\t", messages.get(file)));
             }
-            log.info(sbErrors.toString());
+            log.info(sbMessages.toString());
         }
 
         log.info("Counters: \n\t{}", new TreeMap<>(Stats.getCounters()).entrySet().stream()
