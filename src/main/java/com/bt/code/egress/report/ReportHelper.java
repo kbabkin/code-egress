@@ -100,13 +100,17 @@ public class ReportHelper {
             reportLines.add(new Report.ReportLine(
                     toBoolean(record.get(Headers.Allow)),
                     record.get(Headers.Text),
-                    record.get(Headers.Context),
-                    record.get(Headers.File),
-                    toInteger(record.get(Headers.Line)),
-                    record.get(Headers.Replacement),
-                    record.get(Headers.Comment)));
+                    getColumnIfExists(record, Headers.Context),
+                    getColumnIfExists(record, Headers.File),
+                    toInteger(getColumnIfExists(record, Headers.Line)),
+                    getColumnIfExists(record, Headers.Replacement),
+                    getColumnIfExists(record, Headers.Comment)));
         }
         return reportLines;
+    }
+
+    static String getColumnIfExists(CSVRecord record, Headers field) {
+        return record.isSet(field.name()) ? record.get(field) : "";
     }
 
     static Boolean toBoolean(String str) {

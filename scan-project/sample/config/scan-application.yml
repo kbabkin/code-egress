@@ -30,7 +30,8 @@ read:
       - "**/*.so"
       - "**/code-report.csv"
       - "**/.attach_pid*"
-    valuesFiles: [ ]
+    valuesFiles:
+      - "${scan.config}/file-ignore.csv"
 
 word:
   guard:
@@ -40,8 +41,9 @@ word:
     # "akka": ""
     patterns:
       ## Mappings of "from" and "to" pattern replacements. "To" can contain template variables, can be empty.
-      "[\\w+@\\w+(\\.\\w+)+]": "u{hash}@mail.local"
+      "[\\w[\\w.-]+@\\w+(\\.\\w+)+]": "u{hash}@mail.local"
       "[\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}]": "h{hash}.domain.local"
+      "[\\w[\\w.-]+\\.intra]": "h{hash}.domain.local"
     valueFiles:
       # Long list of words can be extracted to separate files in config folder
       - "${scan.config}/word-guard-value.csv"
@@ -55,7 +57,7 @@ word:
       - "127.0.0.1"
       - "0.0.0.0"
     patterns: # ignore pattern is searched, use ^..$ to match complete word
-      - "simpsons"
+      - "@mail.local$"
     valueFiles: [ ]
     patternFiles: [ ]
 
@@ -63,20 +65,19 @@ word:
 # Manual override for false-positives
 allow:
   reportFiles:
-    - ${scan.config}/allow-report.csv # collect false-positives in config folder, can be copy-pasted from report
-    - ${write.report} # results from previous run, overridden after rerun, cleaned by maven, so manual changes in it can be lost
+    - ${scan.config}/allow-report.csv # common false-positives, utilizing narrowed context, file path patterns
+    - ${scan.config}/allow-report-lines.csv # collect one-time false-positives in config folder, copy-pasted from report
+#    - ${write.report} # results from previous run, overridden after rerun, cleaned by maven, so manual changes in it can be lost
 
 csv:
   enabled: false
   files: [ ]
 ## CSV configuration per file type
-## File type means same file name in different folders
-#    - filename: accounts.csv
-## Columns to replace/clear
+## File path is matched with wildcards
+#    - filename: *accounts.csv
+## Columns to replace with fill patterns
 #      columns:
-#        replace:
-#          "shortName": "id"
-#          "longName": "id"
-#        clear:
-#          - "email"
-#          - "address"
+#        "shortName": "sn{id}" # fill by pattern
+#        "longName": "ln{id}"
+#        "email": ""           # clean
+#        "address": "NA"       # fill with static value

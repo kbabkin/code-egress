@@ -42,8 +42,9 @@ word:
       "[guard@acme.com]": "replaced@mail.local"
     patterns:
       ## Mappings of "from" and "to" pattern replacements. "To" can contain template variables, can be empty.
-      "[\\w+@\\w+(\\.\\w+)+]": "u{hash}@mail.local"
+      "[\\w[\\w.-]+@\\w+(\\.\\w+)+]": "u{hash}@mail.local"
       "[\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}]": "h{hash}.domain.local"
+      "[\\w[\\w.-]+\\.intra]": "h{hash}.domain.local"
     valueFiles:
       # Long list of words can be extracted to separate files in config folder
       - "${scan.config}/word-guard-value.csv"
@@ -58,7 +59,7 @@ word:
       - "0.0.0.0"
       - "ignore@acme.com"
     patterns: # ignore pattern is searched, use ^..$ to match complete word
-      - "simpsons"
+      - "@mail.local$"
     valueFiles: [ ]
     patternFiles: [ ]
 
@@ -66,7 +67,7 @@ word:
 # Manual override for false-positives
 allow:
   reportFiles:
-    - ${scan.config}/allow-report.csv # collect false-positives in config folder, can be copy-pasted from report
+    - ${scan.config}/allow-report.csv # common false-positives, utilizing narrowed context, file path patterns
     - ${write.report} # results from previous run, overridden after rerun, cleaned by maven, so manual changes in it can be lost
 
 csv:
