@@ -65,7 +65,7 @@ public class FolderReplacer {
                 }
                 if (isZipFile(file.getFilePath())) {
                     submitter.accept(relativeFile.toString(), () ->
-                            processZip(file.getFilePath(), relativeFile.getFilePath(), false, false));
+                            processZip(file.getFilePath(), relativeFile.getFilePath()));
                 } else {
                     submitter.accept(relativeFile.toString(), () -> {
                         try {
@@ -91,17 +91,8 @@ public class FolderReplacer {
         }
     }
 
-    private void processZip(Path file, Path relativeFile, boolean createBackup, boolean unpack) {
+    private void processZip(Path file, Path relativeFile) {
         log.info("Processing ZIP file: {}", file);
-
-        //Maybe we will need backups in 'override' tool mode, skipping in 'empty folder' mode
-        if (createBackup) {
-            try {
-                Files.copy(file, Paths.get(file + ".bak"));
-            } catch (IOException e) {
-                log.warn("Failed to create backup copy of {}", file, e);
-            }
-        }
 
         try (FileLocation zipRoot = FileLocation.forZipRoot(file, relativeFile)) {
             //Read and scan zip contents as it were unpacked, but take care of further writes
@@ -109,19 +100,6 @@ public class FolderReplacer {
             //auto close zip in the end
         } catch (Exception e) {
             throw new RuntimeException(String.format("Failed to process zip file: %s", file), e);
-        }
-
-        //Maybe we will need unpacked contents in 'override' tool mode, skipping in 'empty folder' mode
-        if (unpack) {
-            String targetDir = file + ".unzip";
-            try {
-                Files.createDirectories(Paths.get(targetDir));
-                try (ZipFile zipFile = new ZipFile(file.toFile())) {
-                    zipFile.extractAll(targetDir);
-                }
-            } catch (IOException e) {
-                log.error("Could not create folder {} with unpacked content for {}", targetDir, file, e);
-            }
         }
 
         Stats.zipFileRead();
