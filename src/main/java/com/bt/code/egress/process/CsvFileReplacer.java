@@ -66,6 +66,7 @@ public class CsvFileReplacer {
     }
 
     static class GuardedColumns {
+        private final String file;
         private final boolean[] guarded;
         private final String[] templates;
         private final Map<String, Integer> mapping;
@@ -81,6 +82,7 @@ public class CsvFileReplacer {
                 guarded[i] = templates[i] != null;
                 mapping.put(header, i);
             }
+            this.file = file;
             this.guarded = guarded;
             this.templates = templates;
             this.mapping = mapping;
@@ -109,7 +111,10 @@ public class CsvFileReplacer {
             return new StringSubstitutor(name -> Optional.of(name)
                     .map(mapping::get)
                     .map(values::get)
-                    .orElse(null),
+                    .orElseGet(() -> {
+                        Stats.addError(file, "Missing CSV columns: " + name);
+                        return "UNRESOLVED_" + name;
+                    }),
                     "{", "}", '$');
         }
 

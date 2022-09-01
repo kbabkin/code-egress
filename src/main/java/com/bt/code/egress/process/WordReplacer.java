@@ -41,7 +41,7 @@ public class WordReplacer {
         } catch (IOException e) {
             throw new RuntimeException("Failed to write generated replacements to " + generatedReplacementsPath, e);
         }
-        Stats.increment("Generated Replacements", generatedMap.size());
+        Stats.increment("Words Replacements Generated", generatedMap.size());
     }
 
     public String replace(WordMatch wordMatch) {

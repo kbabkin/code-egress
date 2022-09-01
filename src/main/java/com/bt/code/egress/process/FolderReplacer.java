@@ -7,7 +7,6 @@ import com.bt.code.egress.report.Stats;
 import com.bt.code.egress.write.FileCompleted;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.lingala.zip4j.ZipFile;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -16,7 +15,6 @@ import java.nio.charset.MalformedInputException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
@@ -74,6 +72,7 @@ public class FolderReplacer {
                                 fileCompleted = fileReplacer.replace(relativeFile, bufferedReader);
                             } catch (MalformedInputException e) {
                                 log.error("UTF-8 encoding incompatible, trying ISO_8859_1: {}", relativeFile);
+                                Stats.addError(relativeFile.toReportedPath(), "UTF-8 encoding incompatible");
                                 try (BufferedReader bufferedReader = Files.newBufferedReader(file.getFilePath(), StandardCharsets.ISO_8859_1)) {
                                     fileCompleted = fileReplacer.replace(relativeFile, bufferedReader);
                                 }
@@ -81,6 +80,7 @@ public class FolderReplacer {
                             fileCompletedListener.onFileCompleted(fileCompleted);
                         } catch (Exception e) {
                             log.error("Failed to process file {}", relativeFile, e);
+                            Stats.addError(relativeFile.toReportedPath(), "Failed to process file: " + e);
                             Stats.fileFailed();
                             textMatchedListener.onMatched(new TextMatched(new LineLocation(relativeFile.toReportedPath(), 0),
                                     new LineToken(""), null, "", "FAILED to process file " + relativeFile));

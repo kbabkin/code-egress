@@ -31,31 +31,31 @@ public class Stats {
     }
 
     public void fileRead() {
-        increment("Files Read");
+        increment("Read Files");
     }
 
     public void fileChanged() {
-        increment("Files Changed");
+        increment("Changed Files");
     }
 
     public void zipFileRead() {
-        increment("Zip Files Read");
+        increment("Read Zip Files");
     }
 
     public void csvFileRead() {
-        increment("Csv Files Read");
+        increment("Read Csv Files");
     }
 
     public void csvFileWithColumnReplacements() {
-        increment("Csv Files With Configured Column Replacements Detected");
+        increment("Changed Csv Files With Whole Column Replacement");
     }
 
     public void bytesRead(int bytes) {
-        increment("Bytes Read", bytes);
+        increment("Read Bytes", bytes);
     }
 
     public void linesRead(int lines) {
-        increment("Lines Read", lines);
+        increment("Read Lines", lines);
     }
 
     public void fileFailed() {
@@ -76,10 +76,6 @@ public class Stats {
 
     public void wordsMatched(int byValue) {
         increment("Words Matched", byValue);
-    }
-
-    public void wordsFalsePositive(int byValue) {
-        increment("Words False Positive", byValue);
     }
 
     public void wordConflict() {

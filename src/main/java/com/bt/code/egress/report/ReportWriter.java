@@ -36,9 +36,15 @@ public class ReportWriter implements Report.Listener {
         } catch (IOException e) {
             throw new RuntimeException("Failed to write status file " + reportFile, e);
         }
-        long count = reportLines.stream()
+        Stats.increment("Report Lines - All", reportLines.size());
+        Stats.increment("Report Lines - Allow", (int) reportLines.stream()
                 .filter(rl -> Boolean.TRUE.equals(rl.getAllow()))
-                .count();
-        Stats.wordsFalsePositive((int) count);
+                .count());
+        Stats.increment("Report Lines - Disallow", (int) reportLines.stream()
+                .filter(rl -> Boolean.FALSE.equals(rl.getAllow()))
+                .count());
+        Stats.increment("Report Lines - To Review", (int) reportLines.stream()
+                .filter(rl -> rl.getAllow() == null)
+                .count());
     }
 }
