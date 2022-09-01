@@ -9,7 +9,6 @@ import com.bt.code.egress.report.ReportHelper;
 import com.bt.code.egress.report.Stats;
 import com.bt.code.egress.write.FileCompleted;
 import com.google.common.collect.Lists;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -29,7 +28,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@RequiredArgsConstructor
 @Slf4j
 public class CsvFileReplacer {
     private final TextFileReplacer textFileReplacer;
@@ -38,8 +36,21 @@ public class CsvFileReplacer {
     private final ReportHelper reportHelper;
     private final TextMatched.Listener textMatchedListener;
     private final Config.CsvReplacementConfig csvConfig;
-    private final String csvDelim;
-    private final String csvQuote;
+    private final CSVFormat writeCsvFormat;
+    private final CSVFormat readCsvFormat;
+
+    public CsvFileReplacer(TextFileReplacer textFileReplacer, LineReplacer lineReplacer, ReportMatcher reportMatcher,
+                           ReportHelper reportHelper, TextMatched.Listener textMatchedListener,
+                           Config.CsvReplacementConfig csvConfig, char csvDelim, char csvQuote) {
+        this.textFileReplacer = textFileReplacer;
+        this.lineReplacer = lineReplacer;
+        this.reportMatcher = reportMatcher;
+        this.reportHelper = reportHelper;
+        this.textMatchedListener = textMatchedListener;
+        this.csvConfig = csvConfig;
+        this.writeCsvFormat = CSVFormat.DEFAULT.withDelimiter(csvDelim).withQuote(csvQuote);
+        this.readCsvFormat = writeCsvFormat.withFirstRecordAsHeader();
+    }
 
     private Config.CsvFileConfig getCsvFileConfig(String filename) {
         return csvConfig.getEnabled() ? csvConfig.get(filename) : null;
@@ -111,7 +122,7 @@ public class CsvFileReplacer {
 
         List<List<String>> originalRecords = new ArrayList<>();
         List<LineReplacer.MatchParam> firstRunMatches = new ArrayList<>();
-        CSVParser recordsParser = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(bufferedReader);
+        CSVParser recordsParser = readCsvFormat.parse(bufferedReader);
         Map<String, Integer> headerMap = recordsParser.getHeaderMap();
         GuardedColumns guardedColumns = new GuardedColumns(reportedPath, csvFileConfig.getColumns(), headerMap);
         for (CSVRecord record : recordsParser) {
@@ -146,8 +157,8 @@ public class CsvFileReplacer {
         Stats.csvFileWithColumnReplacements();
         List<String> headers = new ArrayList<>(headerMap.keySet());//todo?
         return new FileCompleted(file,
-                write(CSVFormat.DEFAULT, headers, originalRecords),
-                write(CSVFormat.DEFAULT, headers, replacedRecords));
+                write(headers, originalRecords),
+                write(headers, replacedRecords));
     }
 
     private Boolean reportAndGetAllowed(String reportedPath, Config.CsvFileConfig csvFileConfig, List<LineReplacer.MatchParam> firstRunMatches) {
@@ -164,10 +175,10 @@ public class CsvFileReplacer {
         return allowed;
     }
 
-    List<String> write(CSVFormat csvFormat, List<String> headers, List<List<String>> records) {
+    List<String> write(List<String> headers, List<List<String>> records) {
         StringWriter writer = new StringWriter();
         String[] header = headers.toArray(new String[0]);
-        try (CSVPrinter printer = new CSVPrinter(writer, csvFormat.withHeader(header))) {
+        try (CSVPrinter printer = new CSVPrinter(writer, writeCsvFormat.withHeader(header))) {
             for (List<String> record : records) {
                 printer.printRecord(record);
             }

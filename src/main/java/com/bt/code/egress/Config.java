@@ -11,13 +11,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.util.AntPathMatcher;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -165,33 +163,8 @@ public class Config {
         Boolean enabled;
         List<CsvFileConfig> files;
 
-        public boolean includes(String filename) {
-            return files.stream().anyMatch(f -> f.matches(filename));
-        }
-
         public CsvFileConfig get(String filename) {
             return files.stream().filter(f -> f.matches(filename)).findFirst().orElse(null);
         }
-
-    }
-
-    @Data
-    @Deprecated
-    public static class CsvFileDescriptor {
-        String filename;
-        Columns columns;
-        AntPathMatcher pathMatcher = new AntPathMatcher("/");
-
-        public boolean matches(String filenameToMatch) {
-            return pathMatcher.match(filename, filenameToMatch);
-        }
-    }
-
-    @Data
-    @Deprecated
-    public static class Columns {
-        Map<String, String> replace = new LinkedHashMap<>();
-        List<String> clear = new ArrayList<>();
-        Map<String, String> fill = new LinkedHashMap<>();
     }
 }

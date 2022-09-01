@@ -9,6 +9,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -31,6 +32,10 @@ public class ReportMatcher {
                         rl.getFile(), rl.getLine(), rl.getReplacement(), rl.getComment()))
                 .distinct()
                 .collect(Collectors.groupingBy(Report.ReportLine::getText));
+        // longer context has higher priority
+        Comparator<String> longerFirst = Comparator.nullsLast(Comparator.comparingInt(String::length).reversed());
+        rowsByWord.values().forEach(list -> list.sort(Comparator.comparing(Report.ReportLine::getContext, longerFirst)
+                .thenComparing(Report.ReportLine::getFile, longerFirst)));
         return new ReportMatcher(reportHelper, rowsByWord);
     }
 
@@ -59,8 +64,9 @@ public class ReportMatcher {
                             || FilePathMatcher.match(file, lineLocation.getFile());
                 })
                 .map(Report.ReportLine::getAllow)
-                // if both allowing and disallowing rows, use allowing one
-                .reduce((b1, b2) -> true);
+                .filter(Objects::nonNull)
+                // first match has longer context
+                .findFirst();
 
         optionalAllowed.ifPresent(allowed -> log.info("Report allowed: {} for {}, {}, {}", allowed, word, wordContext, lineLocation));
         return optionalAllowed.orElse(null);

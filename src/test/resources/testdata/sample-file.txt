@@ -10,3 +10,4 @@ check ip 192.168.10.11
 guard@acme.com vs ignore@acme.com
 customer 123
 number 123.0
+longer 123.0 context

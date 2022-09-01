@@ -56,13 +56,13 @@ public class App implements ApplicationRunner {
     String scanConfig;
 
     @Value("${csv.delim:,}")
-    String csvDelim;
+    char csvDelim;
     @Value("${csv.quote:\"}")
-    String csvQuote;
+    char csvQuote;
 
     @Value("${context.keepLength:15}")
     int contextKeepLength;
-    @Value("${context.minCompareLength:2}")
+    @Value("${context.minCompareLength:1}")
     int contextMinCompareLength;
 
     @Autowired
