@@ -86,6 +86,8 @@ Example matching rows:
 # Configuration
 
 Scan project here means set of configuration and output files per project being scanned.
+Opposite to project code, scan project should not be published :wink:
+
 Check comments in [src/main/resources/application.yml](src/main/resources/application.yml)
 and [scan-project/sample/config/scan-application.yml](scan-project/sample/config/scan-application.yml)
 
@@ -214,11 +216,11 @@ Values in not mentioned columns are processed and reported according to usual Te
 
 Report File combines results from CSV and Text processing
 
-- Report File contains single row for configured CSV file.
+- Report File contains single row for file matched to CSV configuration.
     - **Context** column shows few examples of guarded words.
     - **Allow** column can be set, for example, you may set **Allow=true** for **Context=No guarded words found**.
 - Columns not mentioned in CSV configuration are scanned as usual Text,
-  and report contain line for each matched cell.
+  and report contains a line for each matched cell.
 
 ### Example scenario
 
@@ -250,10 +252,10 @@ guard:
 
 **Then** report is as following:
 
-| Allow | Text                       | Context                    | File                        | Line | Replacement       | Comment                          |
-|-------|----------------------------|----------------------------|-----------------------------|------|-------------------|----------------------------------|
-|       | csv:name,fullName,mnemonic | Acme, Inc and 1 more match | resources/LegalEntity1.csv  | 1    | n{leId},fn{leId}, | CSV match 1 row replace all rows |
-|       | acm                        | Code ACM.E                 | resources/LegalEntity1.csv  | 1    | w241563812        | Value acm                        |
+| Allow | Text                       | Context                    | File                        | Line | Replacement       | Comment              |
+|-------|----------------------------|----------------------------|-----------------------------|------|-------------------|----------------------|
+|       | csv:name,fullName,mnemonic | Acme, Inc and 1 more match | resources/LegalEntity1.csv  | 1    | n{leId},fn{leId}, | CSV replace all rows |
+|       | acm                        | Code ACM.E                 | resources/LegalEntity1.csv  | 1    | w241563812        | Value acm            |
 
 # ZIP Processing
 
@@ -265,7 +267,7 @@ To compare ZIP files manually, for example, use **Ctrl+D** in Intellij IDEA.
 
 - You can split review task in smaller parts by adding filters by module,
   e.g. ``**/mymodule/`` or by file type, e.g. ``**/*.csv``.
-  Report format and file names in it will be same, so later you can remove those additional filters.
+  Report format and file names in it will be the same, so later those additional filters can be removed.
 - You can restore original values in project code for some degree.
   Create other scan project with ``word-guard-value.csv`` content
   from ``generated-replacement.csv`` having "from" and "to" CSV columns swapped.
