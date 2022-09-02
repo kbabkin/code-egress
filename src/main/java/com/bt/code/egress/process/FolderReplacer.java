@@ -15,6 +15,7 @@ import java.nio.charset.MalformedInputException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
@@ -24,6 +25,7 @@ public class FolderReplacer {
     private final CsvFileReplacer fileReplacer;
     private final FilePathMatcher filePathMatcher;
     private final FilePathMatcher allowFilePathMatcher;
+    private final LineReplacer lineReplacer;
     private final TextMatched.Listener textMatchedListener;
     private final FileCompleted.Listener fileCompletedListener;
 
@@ -40,8 +42,14 @@ public class FolderReplacer {
                 FileLocation relativeFile = rootFolder.relativize(file);
 
                 String name = relativeFile.toString().toLowerCase();
+                String reportedPath = relativeFile.toReportedPath();
+                LineLocation lineLocation = new LineLocation(reportedPath, 0);
                 if (Files.isDirectory(file.getFilePath())) {
                     if (filePathMatcher.match(name + "/")) {
+                        List<LineReplacer.MatchParam> fileNameMatches = lineReplacer.getMatchParams(relativeFile.getFilename(), lineLocation);
+                        for (LineReplacer.MatchParam fileNameMatch : fileNameMatches) {
+                            Stats.addError(reportedPath, "Guarded word: " + fileNameMatch.getWordMatch().getReason());
+                        }
                         replace(file, rootFolder, submitter);
                     } else {
                         log.info("Ignore folder: {}", relativeFile);
@@ -57,10 +65,16 @@ public class FolderReplacer {
                 if (allowFilePathMatcher.match(name)) {
                     log.info("Ignore file due to previous failure: {}", relativeFile);
                     Stats.fileFailed();
-                    textMatchedListener.onMatched(new TextMatched(new LineLocation(relativeFile.toReportedPath(), 0),
+                    textMatchedListener.onMatched(new TextMatched(lineLocation,
                             new LineToken(""), true, "", "Ignore file due to previous failure"));
                     return;
                 }
+
+                List<LineReplacer.MatchParam> fileNameMatches = lineReplacer.getMatchParams(relativeFile.getFilename(), lineLocation);
+                for (LineReplacer.MatchParam fileNameMatch : fileNameMatches) {
+                    Stats.addError(reportedPath, "Guarded word: " + fileNameMatch.getWordMatch().getReason());
+                }
+
                 if (isZipFile(file.getFilePath())) {
                     submitter.accept(relativeFile.toString(), () ->
                             processZip(file.getFilePath(), relativeFile.getFilePath()));
@@ -72,7 +86,7 @@ public class FolderReplacer {
                                 fileCompleted = fileReplacer.replace(relativeFile, bufferedReader);
                             } catch (MalformedInputException e) {
                                 log.error("UTF-8 encoding incompatible, trying ISO_8859_1: {}", relativeFile);
-                                Stats.addError(relativeFile.toReportedPath(), "UTF-8 encoding incompatible");
+                                Stats.addError(reportedPath, "UTF-8 encoding incompatible");
                                 try (BufferedReader bufferedReader = Files.newBufferedReader(file.getFilePath(), StandardCharsets.ISO_8859_1)) {
                                     fileCompleted = fileReplacer.replace(relativeFile, bufferedReader);
                                 }
@@ -80,9 +94,9 @@ public class FolderReplacer {
                             fileCompletedListener.onFileCompleted(fileCompleted);
                         } catch (Exception e) {
                             log.error("Failed to process file {}", relativeFile, e);
-                            Stats.addError(relativeFile.toReportedPath(), "Failed to process file: " + e);
+                            Stats.addError(reportedPath, "Failed to process file: " + e);
                             Stats.fileFailed();
-                            textMatchedListener.onMatched(new TextMatched(new LineLocation(relativeFile.toReportedPath(), 0),
+                            textMatchedListener.onMatched(new TextMatched(lineLocation,
                                     new LineToken(""), null, "", "FAILED to process file " + relativeFile));
                         }
                     });

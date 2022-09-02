@@ -1,6 +1,5 @@
 package com.bt.code.egress.report;
 
-import com.google.common.collect.Sets;
 import lombok.Getter;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -94,17 +93,9 @@ public class Stats {
 
     public void dump() {
         if (!messages.isEmpty()) {
-            log.info("File messages: ");
-            StringBuilder sbMessages = new StringBuilder();
-            for (String file : Sets.newTreeSet(messages.keySet())) {
-                sbMessages.append("\n=======================================================\n");
-                sbMessages.append(String.format("%d messages(s) for file: %s\n",
-                        messages.get(file).size(),
-                        file));
-                sbMessages.append("=======================================================\n\t");
-                sbMessages.append(String.join("\n\t", messages.get(file)));
-            }
-            log.info(sbMessages.toString());
+            log.info("File messages:\n{}", new TreeMap<>(messages).entrySet().stream()
+                    .map(e -> e.getKey() + ":\n\t" + String.join("\n\t", e.getValue()))
+                    .collect(Collectors.joining("\n")));
         }
 
         log.info("Counters: \n\t{}", new TreeMap<>(Stats.getCounters()).entrySet().stream()

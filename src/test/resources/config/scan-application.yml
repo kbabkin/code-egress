@@ -35,7 +35,7 @@ word:
     values:
       ## Mappings of "from" and "to" word replacements. "To" can be empty, will be generated. Examples:
       "acme": "testCompany"
-      "akka": ""
+      "sample": ""
       "123": ""
       "Dummy": "D"
       "Yuppi": "Y"
