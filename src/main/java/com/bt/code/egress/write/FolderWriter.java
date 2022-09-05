@@ -16,12 +16,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 @RequiredArgsConstructor
 @Slf4j
 public class FolderWriter implements FileCompleted.Listener {
     @Getter
     private final Path root;
+
+    private Set<Path> changedZips = new ConcurrentSkipListSet<>();
 
     @Override
     public void onFileCompleted(FileCompleted fileCompleted) {
@@ -35,6 +39,7 @@ public class FolderWriter implements FileCompleted.Listener {
             }
             Stats.fileChanged();
         }
+
         Stats.fileRead();
         Stats.bytesRead(
                 fileCompleted.getOriginalLines().stream().mapToInt(String::length).sum()

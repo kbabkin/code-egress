@@ -1,6 +1,7 @@
 package com.bt.code.egress.process;
 
 import com.bt.code.egress.Config;
+import com.bt.code.egress.read.CsvFormatDetector;
 import com.bt.code.egress.read.LineLocation;
 import com.bt.code.egress.read.LineToken;
 import com.bt.code.egress.read.ReportMatcher;
@@ -14,11 +15,13 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.csv.QuoteMode;
 import org.apache.commons.text.StringSubstitutor;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -38,6 +41,7 @@ public class CsvFileReplacer {
     private final Config.CsvReplacementConfig csvConfig;
     private final CSVFormat writeCsvFormat;
     private final CSVFormat readCsvFormat;
+    private final CsvFormatDetector csvFormatDetector;
 
     public CsvFileReplacer(TextFileReplacer textFileReplacer, LineReplacer lineReplacer, ReportMatcher reportMatcher,
                            ReportHelper reportHelper, TextMatched.Listener textMatchedListener,
@@ -50,6 +54,7 @@ public class CsvFileReplacer {
         this.csvConfig = csvConfig;
         this.writeCsvFormat = CSVFormat.DEFAULT.withDelimiter(csvDelim).withQuote(csvQuote);
         this.readCsvFormat = writeCsvFormat.withFirstRecordAsHeader();
+        this.csvFormatDetector = new CsvFormatDetector(csvDelim, csvQuote);
     }
 
     private Config.CsvFileConfig getCsvFileConfig(String filename) {
@@ -147,6 +152,8 @@ public class CsvFileReplacer {
         List<List<String>> replacedRecords = new ArrayList<>();
         for (List<String> originalRecord : originalRecords) {
             lineNum++; // 0 is header
+            //We treat 'null' values as empty strings
+            originalRecord = CsvUtil.fixNulls(originalRecord);
             List<String> replacedRecord = new ArrayList<>(originalRecord.size());
             LineLocation lineLocation = new LineLocation(reportedPath, lineNum);
             StringSubstitutor csvSubstitutor = guardedColumns.getStringSubstitutor(originalRecord);
@@ -162,8 +169,8 @@ public class CsvFileReplacer {
         Stats.csvFileWithColumnReplacements();
         List<String> headers = new ArrayList<>(headerMap.keySet());//todo?
         return new FileCompleted(file,
-                write(headers, originalRecords),
-                write(headers, replacedRecords));
+                write(headers, originalRecords, file),
+                write(headers, replacedRecords, file));
     }
 
     private Boolean reportAndGetAllowed(String reportedPath, Config.CsvFileConfig csvFileConfig, List<LineReplacer.MatchParam> firstRunMatches) {
@@ -180,10 +187,15 @@ public class CsvFileReplacer {
         return allowed;
     }
 
-    List<String> write(List<String> headers, List<List<String>> records) {
+    List<String> write(List<String> headers, List<List<String>> records, FileLocation sourceFile) throws IOException {
+        //Let's not use relativized paths here
+        FileLocation originalSourceFile = sourceFile.getOriginalLocation() != null ? sourceFile.getOriginalLocation() : sourceFile;
         StringWriter writer = new StringWriter();
         String[] header = headers.toArray(new String[0]);
-        try (CSVPrinter printer = new CSVPrinter(writer, writeCsvFormat.withHeader(header))) {
+        try (CSVPrinter printer = new CSVPrinter(
+                writer, writeCsvFormat
+                .withHeader(header)
+                .withQuoteMode(detectQuoteMode(originalSourceFile)))) {
             for (List<String> record : records) {
                 printer.printRecord(record);
             }
@@ -191,6 +203,17 @@ public class CsvFileReplacer {
             throw new RuntimeException("Failed to write to CSV format", e);
         }
         return Arrays.asList(writer.toString().split("[\\r\\n]+"));
+    }
+
+    private QuoteMode detectQuoteMode(FileLocation file) throws IOException {
+        try {
+            return csvFormatDetector.guessQuoteMode(file);
+        } catch (IOException ie) {
+            throw ie;
+        } catch (Throwable t) {
+            log.error("Failed to detect quote mode", t);
+            return QuoteMode.ALL;
+        }
     }
 
     public String getJoinedContext(List<LineReplacer.MatchParam> firstRunMatches) {
