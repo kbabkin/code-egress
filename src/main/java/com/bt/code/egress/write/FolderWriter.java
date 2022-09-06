@@ -16,6 +16,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -28,13 +30,18 @@ public class FolderWriter implements FileCompleted.Listener {
         init();
         if (fileCompleted.isChanged()) {
             if (fileCompleted.getFile().isInsideZip()) {
-                writeIntoZip(fileCompleted.getFile().getRelativeZipPath(),
+                Path originalZipRelativePath = fileCompleted.getFile().getRelativeZipPath();
+                Path newZipPath = root.resolve(originalZipRelativePath);
+
+                prepareZip(fileCompleted.getFile().getZipPath(), newZipPath);
+                writeIntoZip(originalZipRelativePath, newZipPath,
                         fileCompleted.getFile().getFilePath(), fileCompleted.getReplacedLines());
             } else {
                 write(fileCompleted.getFile().getFilePath(), fileCompleted.getReplacedLines());
             }
             Stats.fileChanged();
         }
+
         Stats.fileRead();
         Stats.bytesRead(
                 fileCompleted.getOriginalLines().stream().mapToInt(String::length).sum()
@@ -58,16 +65,12 @@ public class FolderWriter implements FileCompleted.Listener {
         }
     }
 
-    public void writeIntoZip(Path originalZipPath, Path file, List<String> replacedLines) {
-        Path newZipPath = root.resolve(originalZipPath);
+    public void writeIntoZip(Path originalZipPath, Path newZipPath, Path file, List<String> replacedLines) {
         log.info("For originalZipPath {}, will write {} to target {}", originalZipPath, file, newZipPath);
 
         ZipFile zipFile = new ZipFile(newZipPath.toFile());
         ZipParameters parameters = new ZipParameters();
         parameters.setFileNameInZip(file.toString());
-        if (!Files.exists(newZipPath)) {
-            createEmptyZip(newZipPath);
-        }
 
         try {
             zipFile.addStream(toStream(replacedLines), parameters);
@@ -79,27 +82,12 @@ public class FolderWriter implements FileCompleted.Listener {
         log.info("Save changed file {} to {}", file, newZipPath);
     }
 
-    private InputStream toStream(List<String> lines) {
-        return new ByteArrayInputStream(String.join(System.lineSeparator(), lines).getBytes(StandardCharsets.UTF_8));
+    protected void prepareZip(Path originalZipPath, Path newZipPath) {
+        //FolderWriter is for in-place writing: no actions required to prepare zip
     }
 
-    final static byte[] EMPTY_ZIP_BYTES = {80, 75, 05, 06, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00};
-
-    public static void createEmptyZip(Path path) {
-        try {
-            Files.createDirectories(path.getParent());
-        } catch (IOException e) {
-            throw new RuntimeException(String.format("Could not create directories for empty zip %s", path));
-        }
-
-        try {
-            OutputStream fos = Files.newOutputStream(path, StandardOpenOption.CREATE_NEW);
-            fos.write(EMPTY_ZIP_BYTES, 0, 22);
-            fos.flush();
-            fos.close();
-        } catch (IOException e) {
-            throw new RuntimeException(String.format("Could not create empty zip %s", path));
-        }
+    private InputStream toStream(List<String> lines) {
+        return new ByteArrayInputStream(String.join(System.lineSeparator(), lines).getBytes(StandardCharsets.UTF_8));
     }
 
     void init() {

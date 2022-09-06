@@ -8,13 +8,12 @@ import com.bt.code.egress.write.FileCompleted;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.MalformedInputException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
@@ -81,16 +80,12 @@ public class FolderReplacer {
                 } else {
                     submitter.accept(relativeFile.toString(), () -> {
                         try {
-                            FileCompleted fileCompleted;
-                            try (BufferedReader bufferedReader = Files.newBufferedReader(file.getFilePath())) {
-                                fileCompleted = fileReplacer.replace(relativeFile, bufferedReader);
-                            } catch (MalformedInputException e) {
-                                log.error("UTF-8 encoding incompatible, trying ISO_8859_1: {}", relativeFile);
-                                Stats.addError(reportedPath, "UTF-8 encoding incompatible");
-                                try (BufferedReader bufferedReader = Files.newBufferedReader(file.getFilePath(), StandardCharsets.ISO_8859_1)) {
-                                    fileCompleted = fileReplacer.replace(relativeFile, bufferedReader);
-                                }
-                            }
+                            BufferedReaderUtil.BufferedReaderFunction<FileCompleted> replacementFunction =
+                                    bufferedReader -> fileReplacer.replace(relativeFile, bufferedReader);
+
+                            FileCompleted fileCompleted = BufferedReaderUtil.doWithBufferedReader(
+                                    file, replacementFunction, StandardCharsets.ISO_8859_1);
+
                             fileCompletedListener.onFileCompleted(fileCompleted);
                         } catch (Exception e) {
                             log.error("Failed to process file {}", relativeFile, e);

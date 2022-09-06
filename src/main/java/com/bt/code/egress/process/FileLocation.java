@@ -25,6 +25,8 @@ public class FileLocation implements AutoCloseable {
     private Path relativeZipPath;
     private Path rootInsideZip;
 
+    private FileLocation originalLocation;
+
     @Override
     public String toString() {
         return toReportedPath();
@@ -65,9 +67,13 @@ public class FileLocation implements AutoCloseable {
 
     public FileLocation relativize(FileLocation other) {
         if (!other.isInsideZip() && !isInsideZip()) {
-            return FileLocation.forFile(getFilePath().relativize(other.getFilePath()));
+            FileLocation result = FileLocation.forFile(getFilePath().relativize(other.getFilePath()));
+            result.setOriginalLocation(other);
+            return result;
         } else if (other.isInsideZip() && isInsideZip()) {
-            return FileLocation.withOtherPathInsideZip(this, getFilePath().relativize(other.getFilePath()));
+            FileLocation result = FileLocation.withOtherPathInsideZip(this, getFilePath().relativize(other.getFilePath()));
+            result.setOriginalLocation(other);
+            return result;
         } else {
             throw new IllegalArgumentException ("Invalid usage of FileLocation API : relativize() arguments must be both zip-based or not zip-based");
         }
