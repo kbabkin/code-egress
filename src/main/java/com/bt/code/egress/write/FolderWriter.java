@@ -90,25 +90,6 @@ public class FolderWriter implements FileCompleted.Listener {
         return new ByteArrayInputStream(String.join(System.lineSeparator(), lines).getBytes(StandardCharsets.UTF_8));
     }
 
-    final static byte[] EMPTY_ZIP_BYTES = {80, 75, 05, 06, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00, 00};
-
-    public static void createEmptyZip(Path path) {
-        try {
-            Files.createDirectories(path.getParent());
-        } catch (IOException e) {
-            throw new RuntimeException(String.format("Could not create directories for empty zip %s", path));
-        }
-
-        try {
-            OutputStream fos = Files.newOutputStream(path, StandardOpenOption.CREATE_NEW);
-            fos.write(EMPTY_ZIP_BYTES, 0, 22);
-            fos.flush();
-            fos.close();
-        } catch (IOException e) {
-            throw new RuntimeException(String.format("Could not create empty zip %s", path));
-        }
-    }
-
     void init() {
         // do nothing by default
     }
