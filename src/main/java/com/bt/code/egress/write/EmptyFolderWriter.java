@@ -6,12 +6,17 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Stream;
 
 @Slf4j
 public class EmptyFolderWriter extends FolderWriter {
     private boolean inited;
     private boolean wasEmpty;
+
+    private Set<Path> preparedZips = new ConcurrentSkipListSet<>();
 
     public EmptyFolderWriter(Path root) {
         super(root);
@@ -50,16 +55,21 @@ public class EmptyFolderWriter extends FolderWriter {
 
     @Override
     protected void prepareZip(Path sourceZipPath, Path newZipPath) {
-        try {
-            if (!Files.exists(newZipPath.getParent())) {
-                Files.createDirectories(newZipPath.getParent());
+        if (!preparedZips.contains(sourceZipPath)) {
+            try {
+                if (!Files.exists(newZipPath.getParent())) {
+                    Files.createDirectories(newZipPath.getParent());
+                }
+                //Overwrite any copies that might be left after previous runs
+                Files.copy(sourceZipPath, newZipPath, StandardCopyOption.REPLACE_EXISTING);
+
+                //Mark as prepared. Do not be scared of race conditions,
+                // as files processing for a given zip is single-threaded
+                preparedZips.add(sourceZipPath);
+            } catch (IOException e) {
+                log.error("Could not copy {} to {}", sourceZipPath, newZipPath, e);
+                Stats.addError(newZipPath.toString(), String.format("Could not copy %s to %s", sourceZipPath, newZipPath));
             }
-            if (!Files.exists(newZipPath)) {
-                Files.copy(sourceZipPath, newZipPath);
-            }
-        } catch (IOException e) {
-            log.error("Could not copy {} to {}", sourceZipPath, newZipPath, e);
-            Stats.addError(newZipPath.toString(), String.format("Could not copy %s to %s", sourceZipPath, newZipPath));
         }
     }
 }

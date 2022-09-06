@@ -212,7 +212,7 @@ public class CsvFileReplacer {
             throw ie;
         } catch (Throwable t) {
             log.error("Failed to detect quote mode", t);
-            return QuoteMode.ALL;
+            return QuoteMode.MINIMAL;
         }
     }
 
