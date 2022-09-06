@@ -1,5 +1,6 @@
 package com.bt.code.egress.write;
 
+import com.bt.code.egress.report.Stats;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -44,6 +45,21 @@ public class EmptyFolderWriter extends FolderWriter {
         init();
         if (!wasEmpty) {
             log.warn("!!!WARNING!!! write folder {} was not empty, it can contain files from previous scans!", getRoot());
+        }
+    }
+
+    @Override
+    protected void prepareZip(Path sourceZipPath, Path newZipPath) {
+        try {
+            if (!Files.exists(newZipPath.getParent())) {
+                Files.createDirectories(newZipPath.getParent());
+            }
+            if (!Files.exists(newZipPath)) {
+                Files.copy(sourceZipPath, newZipPath);
+            }
+        } catch (IOException e) {
+            log.error("Could not copy {} to {}", sourceZipPath, newZipPath, e);
+            Stats.addError(newZipPath.toString(), String.format("Could not copy %s to %s", sourceZipPath, newZipPath));
         }
     }
 }

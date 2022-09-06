@@ -25,14 +25,16 @@ public class FolderWriter implements FileCompleted.Listener {
     @Getter
     private final Path root;
 
-    private Set<Path> changedZips = new ConcurrentSkipListSet<>();
-
     @Override
     public void onFileCompleted(FileCompleted fileCompleted) {
         init();
         if (fileCompleted.isChanged()) {
             if (fileCompleted.getFile().isInsideZip()) {
-                writeIntoZip(fileCompleted.getFile().getRelativeZipPath(),
+                Path originalZipRelativePath = fileCompleted.getFile().getRelativeZipPath();
+                Path newZipPath = root.resolve(originalZipRelativePath);
+
+                prepareZip(fileCompleted.getFile().getZipPath(), newZipPath);
+                writeIntoZip(originalZipRelativePath, newZipPath,
                         fileCompleted.getFile().getFilePath(), fileCompleted.getReplacedLines());
             } else {
                 write(fileCompleted.getFile().getFilePath(), fileCompleted.getReplacedLines());
@@ -63,16 +65,12 @@ public class FolderWriter implements FileCompleted.Listener {
         }
     }
 
-    public void writeIntoZip(Path originalZipPath, Path file, List<String> replacedLines) {
-        Path newZipPath = root.resolve(originalZipPath);
+    public void writeIntoZip(Path originalZipPath, Path newZipPath, Path file, List<String> replacedLines) {
         log.info("For originalZipPath {}, will write {} to target {}", originalZipPath, file, newZipPath);
 
         ZipFile zipFile = new ZipFile(newZipPath.toFile());
         ZipParameters parameters = new ZipParameters();
         parameters.setFileNameInZip(file.toString());
-        if (!Files.exists(newZipPath)) {
-            createEmptyZip(newZipPath);
-        }
 
         try {
             zipFile.addStream(toStream(replacedLines), parameters);
@@ -82,6 +80,10 @@ public class FolderWriter implements FileCompleted.Listener {
         }
 
         log.info("Save changed file {} to {}", file, newZipPath);
+    }
+
+    protected void prepareZip(Path originalZipPath, Path newZipPath) {
+        //FolderWriter is for in-place writing: no actions required to prepare zip
     }
 
     private InputStream toStream(List<String> lines) {
