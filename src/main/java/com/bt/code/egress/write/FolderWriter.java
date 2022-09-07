@@ -10,14 +10,10 @@ import net.lingala.zip4j.model.ZipParameters;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListSet;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -68,13 +64,11 @@ public class FolderWriter implements FileCompleted.Listener {
     public void writeIntoZip(Path originalZipPath, Path newZipPath, Path file, List<String> replacedLines) {
         log.info("For originalZipPath {}, will write {} to target {}", originalZipPath, file, newZipPath);
 
-        ZipFile zipFile = new ZipFile(newZipPath.toFile());
-        ZipParameters parameters = new ZipParameters();
-        parameters.setFileNameInZip(file.toString());
+        try (ZipFile zipFile = new ZipFile(newZipPath.toFile())) {
+            ZipParameters parameters = new ZipParameters();
+            parameters.setFileNameInZip(file.toString());
 
-        try {
             zipFile.addStream(toStream(replacedLines), parameters);
-            zipFile.close();
         } catch (IOException ie) {
             throw new RuntimeException(String.format("Failed to add file %s to zip %s", file, newZipPath), ie);
         }
