@@ -86,7 +86,8 @@ public class App implements ApplicationRunner {
                 reportMatcher, reportHelper, reportCollector, config.csv, csvDelim, csvQuote);
         FolderWriter folderWriter = writeInplace ? new FolderWriter(folder.toPath()) : new EmptyFolderWriter(writeFolder.toPath());
         FolderReplacer folderReplacer = new FolderReplacer(csvFileReplacer, filePathMatcher,
-                reportMatcher.getAllowFilePathMatcher(), lineReplacer, reportCollector, folderWriter);
+                reportMatcher.getAllowFilePathMatcher(), lineReplacer, reportCollector,
+                folderWriter, folderWriter);
         ReportWriter reportWriter = new ReportWriter(reportHelper, writeReport.toPath());
         JobRunner jobRunner = new JobRunner(readThreads);
         log.info("Configured in {} ms", System.currentTimeMillis() - startedAt);

@@ -3,7 +3,6 @@ package com.bt.code.egress.write;
 import com.bt.code.egress.process.FileLocation;
 import lombok.Value;
 
-import java.nio.file.Path;
 import java.util.List;
 
 @Value
@@ -13,7 +12,7 @@ public class FileCompleted {
     List<String> replacedLines;
 
     @FunctionalInterface
-    public interface Listener {
+    public interface FileListener {
         void onFileCompleted(FileCompleted fileCompleted);
     }
 

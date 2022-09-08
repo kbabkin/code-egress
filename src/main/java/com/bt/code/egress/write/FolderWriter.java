@@ -13,13 +13,18 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 @RequiredArgsConstructor
 @Slf4j
-public class FolderWriter implements FileCompleted.Listener {
+public class FolderWriter implements FileCompleted.FileListener, ZipCompleted.ZipListener {
     @Getter
     private final Path root;
+    private Set<Path> preparedZips = new ConcurrentSkipListSet<>();
 
     @Override
     public void onFileCompleted(FileCompleted fileCompleted) {
@@ -27,7 +32,7 @@ public class FolderWriter implements FileCompleted.Listener {
         if (fileCompleted.isChanged()) {
             if (fileCompleted.getFile().isInsideZip()) {
                 Path originalZipRelativePath = fileCompleted.getFile().getRelativeZipPath();
-                Path newZipPath = root.resolve(originalZipRelativePath);
+                Path newZipPath = getTargetZipRoot().resolve(originalZipRelativePath);;
 
                 prepareZip(fileCompleted.getFile().getZipPath(), newZipPath);
                 writeIntoZip(originalZipRelativePath, newZipPath,
@@ -46,6 +51,26 @@ public class FolderWriter implements FileCompleted.Listener {
 
         if (fileCompleted.getFile().isCsv()) {
             Stats.csvFileRead();
+        }
+    }
+
+    @Override
+    public void onZipCompleted(ZipCompleted zipCompleted) {
+        //Copy the resulting zip back in-place from temp dir
+        Path newZipAbsolutePath = getTempRoot().resolve(zipCompleted.getSourceZipRelativePath());
+        try {
+            Files.move(
+                    newZipAbsolutePath,
+                    zipCompleted.getSourceZipAbsolutePath(),
+                    StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException ie) {
+            Stats.addError(zipCompleted.getSourceZipAbsolutePath().toString(),
+                    String.format("Cannot replace %s due to %s",
+                    zipCompleted.getSourceZipAbsolutePath(),
+                    ie));
+            log.error("Could not move {} to {}",
+                    newZipAbsolutePath,
+                    zipCompleted.getSourceZipAbsolutePath(), ie);
         }
     }
 
@@ -76,12 +101,38 @@ public class FolderWriter implements FileCompleted.Listener {
         log.info("Save changed file {} to {}", file, newZipPath);
     }
 
-    protected void prepareZip(Path originalZipPath, Path newZipPath) {
-        //FolderWriter is for in-place writing: no actions required to prepare zip
+    protected void prepareZip(Path sourceZipPath, Path newZipPath) {
+        if (!preparedZips.contains(sourceZipPath)) {
+            try {
+                if (!Files.exists(newZipPath.getParent())) {
+                    Files.createDirectories(newZipPath.getParent());
+                }
+                //Overwrite any copies that might be left after previous runs
+                Files.copy(sourceZipPath, newZipPath, StandardCopyOption.REPLACE_EXISTING);
+
+                //Mark as prepared. Do not be scared of race conditions,
+                // as files processing for a given zip is single-threaded
+                preparedZips.add(sourceZipPath);
+            } catch (IOException e) {
+                log.error("Could not copy {} to {}", sourceZipPath, newZipPath, e);
+                Stats.addError(newZipPath.toString(), String.format("Could not copy %s to %s", sourceZipPath, newZipPath));
+            }
+        }
     }
+
 
     private InputStream toStream(List<String> lines) {
         return new ByteArrayInputStream(String.join(System.lineSeparator(), lines).getBytes(StandardCharsets.UTF_8));
+    }
+
+    protected Path getTargetZipRoot() {
+        return getTempRoot();
+    }
+
+    private Path getTempRoot() {
+        String tmpDir = System.getProperty("java.io.tmpdir");
+        Path egressTempRoot = Paths.get(tmpDir, "egress-tmp");
+        return egressTempRoot;
     }
 
     void init() {
