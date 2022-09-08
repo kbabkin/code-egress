@@ -58,6 +58,12 @@ public class FolderWriter implements FileCompleted.FileListener, ZipCompleted.Zi
     public void onZipCompleted(ZipCompleted zipCompleted) {
         //Copy the resulting zip back in-place from temp dir
         Path newZipAbsolutePath = getTempRoot().resolve(zipCompleted.getSourceZipRelativePath());
+
+        if (!Files.exists(newZipAbsolutePath)) {
+            //No changes to this zip file - skipping
+            return;
+        }
+
         try {
             Files.move(
                     newZipAbsolutePath,
