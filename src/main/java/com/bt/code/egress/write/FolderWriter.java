@@ -24,8 +24,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 public class FolderWriter implements FileCompleted.Listener, ZipCompleted.Listener {
     @Getter
     private final Path root;
-    @Getter
-    private Set<Path> preparedZips = new ConcurrentSkipListSet<>();
+    private final Set<Path> preparedZips = new ConcurrentSkipListSet<>();
 
     @Override
     public void onFileCompleted(FileCompleted fileCompleted) {
