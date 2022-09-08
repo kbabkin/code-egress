@@ -5,6 +5,7 @@ import com.bt.code.egress.read.LineLocation;
 import com.bt.code.egress.read.LineToken;
 import com.bt.code.egress.report.Stats;
 import com.bt.code.egress.write.FileCompleted;
+import com.bt.code.egress.write.ZipCompleted;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -13,7 +14,6 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
@@ -27,6 +27,7 @@ public class FolderReplacer {
     private final LineReplacer lineReplacer;
     private final TextMatched.Listener textMatchedListener;
     private final FileCompleted.Listener fileCompletedListener;
+    private final ZipCompleted.Listener zipCompletedListener;
 
     public void replace(FileLocation folder, BiConsumer<String, Runnable> submitter) {
         replace(folder, folder, submitter);
@@ -112,6 +113,9 @@ public class FolderReplacer {
         }
 
         Stats.zipFileRead();
+
+        zipCompletedListener.onZipCompleted(new ZipCompleted(file, relativeFile));
+
         log.info("ZIP file: {} processed", file);
     }
 
