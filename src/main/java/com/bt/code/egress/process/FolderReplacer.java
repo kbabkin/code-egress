@@ -26,8 +26,8 @@ public class FolderReplacer {
     private final FilePathMatcher allowFilePathMatcher;
     private final LineReplacer lineReplacer;
     private final TextMatched.Listener textMatchedListener;
-    private final FileCompleted.FileListener fileCompletedListener;
-    private final ZipCompleted.ZipListener zipCompletedListener;
+    private final FileCompleted.Listener fileCompletedListener;
+    private final ZipCompleted.Listener zipCompletedListener;
 
     public void replace(FileLocation folder, BiConsumer<String, Runnable> submitter) {
         replace(folder, folder, submitter);

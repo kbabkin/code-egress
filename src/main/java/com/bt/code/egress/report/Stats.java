@@ -41,6 +41,10 @@ public class Stats {
         increment("Read Zip Files");
     }
 
+    public void zipFileChanged() {
+        increment("Changed Zip Files");
+    }
+
     public void csvFileRead() {
         increment("Read Csv Files");
     }

@@ -21,9 +21,10 @@ import java.util.concurrent.ConcurrentSkipListSet;
 
 @RequiredArgsConstructor
 @Slf4j
-public class FolderWriter implements FileCompleted.FileListener, ZipCompleted.ZipListener {
+public class FolderWriter implements FileCompleted.Listener, ZipCompleted.Listener {
     @Getter
     private final Path root;
+    @Getter
     private Set<Path> preparedZips = new ConcurrentSkipListSet<>();
 
     @Override
@@ -69,6 +70,8 @@ public class FolderWriter implements FileCompleted.FileListener, ZipCompleted.Zi
                     newZipAbsolutePath,
                     zipCompleted.getSourceZipAbsolutePath(),
                     StandardCopyOption.REPLACE_EXISTING);
+            log.info("Moved zip {} to {}", newZipAbsolutePath, zipCompleted.getSourceZipAbsolutePath());
+
         } catch (IOException ie) {
             Stats.addError(zipCompleted.getSourceZipAbsolutePath().toString(),
                     String.format("Cannot replace %s due to %s",
@@ -115,10 +118,12 @@ public class FolderWriter implements FileCompleted.FileListener, ZipCompleted.Zi
                 }
                 //Overwrite any copies that might be left after previous runs
                 Files.copy(sourceZipPath, newZipPath, StandardCopyOption.REPLACE_EXISTING);
+                log.info("Copied zip {} to {}", sourceZipPath, newZipPath);
 
                 //Mark as prepared. Do not be scared of race conditions,
                 // as files processing for a given zip is single-threaded
                 preparedZips.add(sourceZipPath);
+                Stats.zipFileChanged();
             } catch (IOException e) {
                 log.error("Could not copy {} to {}", sourceZipPath, newZipPath, e);
                 Stats.addError(newZipPath.toString(), String.format("Could not copy %s to %s", sourceZipPath, newZipPath));

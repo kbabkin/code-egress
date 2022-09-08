@@ -12,7 +12,7 @@ public class FileCompleted {
     List<String> replacedLines;
 
     @FunctionalInterface
-    public interface FileListener {
+    public interface Listener {
         void onFileCompleted(FileCompleted fileCompleted);
     }
 

@@ -10,7 +10,7 @@ public class ZipCompleted {
     Path sourceZipRelativePath;
 
     @FunctionalInterface
-    public interface ZipListener {
+    public interface Listener {
         void onZipCompleted(ZipCompleted zipCompleted);
     }
 }
