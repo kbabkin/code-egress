@@ -50,7 +50,7 @@ public class Stats {
     }
 
     public void csvFileWithColumnReplacements() {
-        increment("Changed Csv Files With Whole Column Replacement");
+        increment("Changed Csv Column Template Files");
     }
 
     public void bytesRead(int bytes) {

@@ -51,7 +51,7 @@ public class CsvFileReplacer {
         this.reportHelper = reportHelper;
         this.textMatchedListener = textMatchedListener;
         this.csvConfig = csvConfig;
-        this.writeCsvFormat = CSVFormat.DEFAULT.withDelimiter(csvDelim).withQuote(csvQuote);
+        this.writeCsvFormat = CSVFormat.DEFAULT.withDelimiter(csvDelim).withQuote(csvQuote).withCommentMarker(commentMarker);
         this.readCsvFormat = writeCsvFormat.withFirstRecordAsHeader();
         this.csvFormatDetector = new CsvFormatDetector(csvDelim, csvQuote, commentMarker);
     }
@@ -180,7 +180,7 @@ public class CsvFileReplacer {
         Boolean allowed = reportMatcher.getAllowed(joinedLineToken, joinedLineLocation);
 
         textMatchedListener.onMatched(new TextMatched(joinedLineLocation, joinedLineToken, allowed, joinedReplacement,
-                "CSV replace all rows"));
+                "CSV Column Template"));
         return allowed;
     }
 

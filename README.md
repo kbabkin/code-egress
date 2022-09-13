@@ -12,7 +12,7 @@ It maintains consistent results among multiple sequential scans and pre-release 
 - [Run](#run)
 - [File Processing](#file-processing)
 - [Text Processing](#text-processing)
-- [CSV Processing](#csv-processing)
+- [CSV Column Template Processing](#csv-column-template-processing)
 - [ZIP Processing](#zip-processing)
 - [Tips and Tricks](#tips-and-tricks)
 
@@ -190,11 +190,11 @@ Report file is generated in both modes.
   For example ``match@acme.com`` is wider than ``acme``, so its configuration will be applied.
 - Only changed files are saved, both in Review and Cleanup processing modes.
 
-# CSV Processing
+# CSV Column Template Processing
 
 CSV files can be configured to fill columns by template, even if no guarded words are found.
 
-## CSV configuration per file type
+## CSV Column Template configuration per file type
 
 ```
 csv:
@@ -213,7 +213,7 @@ csv:
 
 Values in not mentioned columns are processed and reported according to usual Text matching
 
-## CSV in Report File
+## CSV Column Template in Report File
 
 Report File combines results from CSV and Text processing
 
@@ -254,7 +254,7 @@ csv:
 
 | Allow | Text                       | Context                    | File                        | Line | Replacement       | Comment              |
 |-------|----------------------------|----------------------------|-----------------------------|------|-------------------|----------------------|
-|       | csv:name,fullName,mnemonic | Acme, Inc and 1 more match | resources/LegalEntity1.csv  | 1    | n{leId},fn{leId}, | CSV replace all rows |
+|       | csv:name,fullName,mnemonic | Acme, Inc and 1 more match | resources/LegalEntity1.csv  | 1    | n{leId},fn{leId}, | CSV Column Template  |
 |       | acm                        | Code ACM.E                 | resources/LegalEntity1.csv  | 1    | w241563812        | Value acm            |
 
 # ZIP Processing

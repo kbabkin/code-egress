@@ -24,7 +24,7 @@ public class CsvFormatDetector {
     QuoteMode getQuoteMode(BufferedReader br) throws IOException {
         String line;
         while ((line = br.readLine()) != null) {
-            if (commentMarker == null || !(line.charAt(0) == commentMarker)) {
+            if (commentMarker == null || line.charAt(0) != commentMarker) {
                 return line.charAt(0) == quote ? QuoteMode.ALL : QuoteMode.MINIMAL;
             }
         }
