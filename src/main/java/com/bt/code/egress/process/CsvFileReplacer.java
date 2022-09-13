@@ -21,7 +21,6 @@ import org.apache.commons.text.StringSubstitutor;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringWriter;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -45,7 +44,7 @@ public class CsvFileReplacer {
 
     public CsvFileReplacer(TextFileReplacer textFileReplacer, LineReplacer lineReplacer, ReportMatcher reportMatcher,
                            ReportHelper reportHelper, TextMatched.Listener textMatchedListener,
-                           Config.CsvReplacementConfig csvConfig, char csvDelim, char csvQuote) {
+                           Config.CsvReplacementConfig csvConfig, char csvDelim, char csvQuote, Character commentMarker) {
         this.textFileReplacer = textFileReplacer;
         this.lineReplacer = lineReplacer;
         this.reportMatcher = reportMatcher;
@@ -54,7 +53,7 @@ public class CsvFileReplacer {
         this.csvConfig = csvConfig;
         this.writeCsvFormat = CSVFormat.DEFAULT.withDelimiter(csvDelim).withQuote(csvQuote);
         this.readCsvFormat = writeCsvFormat.withFirstRecordAsHeader();
-        this.csvFormatDetector = new CsvFormatDetector(csvDelim, csvQuote);
+        this.csvFormatDetector = new CsvFormatDetector(csvDelim, csvQuote, commentMarker);
     }
 
     private Config.CsvFileConfig getCsvFileConfig(String filename) {
@@ -118,7 +117,7 @@ public class CsvFileReplacer {
                     .map(values::get)
                     .orElseGet(() -> {
                         Stats.addError(file, "Missing CSV columns: " + name);
-                        return "UNRESOLVED_" + name;
+                        return "_UNRESOLVED_" + name + "_";
                     }),
                     "{", "}", '$');
         }
@@ -152,8 +151,6 @@ public class CsvFileReplacer {
         List<List<String>> replacedRecords = new ArrayList<>();
         for (List<String> originalRecord : originalRecords) {
             lineNum++; // 0 is header
-            //We treat 'null' values as empty strings
-            originalRecord = CsvUtil.fixNulls(originalRecord);
             List<String> replacedRecord = new ArrayList<>(originalRecord.size());
             LineLocation lineLocation = new LineLocation(reportedPath, lineNum);
             StringSubstitutor csvSubstitutor = guardedColumns.getStringSubstitutor(originalRecord);
@@ -187,7 +184,7 @@ public class CsvFileReplacer {
         return allowed;
     }
 
-    List<String> write(List<String> headers, List<List<String>> records, FileLocation sourceFile) throws IOException {
+    List<String> write(List<String> headers, List<List<String>> records, FileLocation sourceFile) {
         //Let's not use relativized paths here
         FileLocation originalSourceFile = sourceFile.getOriginalLocation() != null ? sourceFile.getOriginalLocation() : sourceFile;
         StringWriter writer = new StringWriter();
