@@ -59,6 +59,8 @@ public class App implements ApplicationRunner {
     char csvDelim;
     @Value("${csv.quote:\"}")
     char csvQuote;
+    @Value("${csv.commentMarker:#{null}}")
+    Character csvCommentMarker;
 
     @Value("${context.keepLength:15}")
     int contextKeepLength;
@@ -83,7 +85,7 @@ public class App implements ApplicationRunner {
         ReportCollector reportCollector = new ReportCollector(reportHelper);
         TextFileReplacer textFileReplacer = new TextFileReplacer(lineReplacer, reportCollector);
         CsvFileReplacer csvFileReplacer = new CsvFileReplacer(textFileReplacer, lineReplacer,
-                reportMatcher, reportHelper, reportCollector, config.csv, csvDelim, csvQuote);
+                reportMatcher, reportHelper, reportCollector, config.csv, csvDelim, csvQuote, csvCommentMarker);
         FolderWriter folderWriter = writeInplace ? new FolderWriter(folder.toPath()) : new EmptyFolderWriter(writeFolder.toPath());
         FolderReplacer folderReplacer = new FolderReplacer(csvFileReplacer, filePathMatcher,
                 reportMatcher.getAllowFilePathMatcher(), lineReplacer, reportCollector,
