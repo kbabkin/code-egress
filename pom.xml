@@ -26,6 +26,7 @@
         <postgresql.version>42.3.6</postgresql.version>
         <opencsv.version>4.1</opencsv.version>
         <zip4j.version>2.11.1</zip4j.version>
+        <jgit.version>5.13.1.202206130422-r</jgit.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
@@ -42,6 +43,7 @@
                             <artifactId>lombok</artifactId>
                         </exclude>
                     </excludes>
+                    <mainClass>com.bt.code.egress.App</mainClass>
                 </configuration>
             </plugin>
         </plugins>
@@ -99,6 +101,11 @@
             <groupId>net.lingala.zip4j</groupId>
             <artifactId>zip4j</artifactId>
             <version>${zip4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jgit</groupId>
+            <artifactId>org.eclipse.jgit</artifactId>
+            <version>${jgit.version}</version>
         </dependency>
 
         <dependency>
