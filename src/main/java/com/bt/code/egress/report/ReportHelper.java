@@ -1,5 +1,6 @@
 package com.bt.code.egress.report;
 
+import com.bt.code.egress.file.LocalFiles;
 import com.bt.code.egress.read.LineToken;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +14,6 @@ import org.apache.commons.lang3.StringUtils;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -82,11 +82,11 @@ public class ReportHelper {
     }
 
     public List<Report.ReportLine> read(Path path) {
-        if (!Files.exists(path)) {
+        if (!LocalFiles.exists(path)) {
             log.info("Skip missing allow config report file {}", path);
             return Collections.emptyList();
         }
-        try (BufferedReader reader = Files.newBufferedReader(path)) {
+        try (BufferedReader reader = LocalFiles.newBufferedReader(path)) {
             return read(reader);
         } catch (Exception e) {
             throw new RuntimeException("Failed to read allow config from report file " + path, e);

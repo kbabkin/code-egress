@@ -1,6 +1,5 @@
-acme
-acme at start
 ACME uppercase
+acme at start
 in ACME line
 ending with acme
 acme and also one more acme

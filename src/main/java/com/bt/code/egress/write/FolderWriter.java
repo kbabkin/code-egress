@@ -1,5 +1,6 @@
 package com.bt.code.egress.write;
 
+import com.bt.code.egress.file.LocalFiles;
 import com.bt.code.egress.report.Stats;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +12,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
@@ -32,7 +32,7 @@ public class FolderWriter implements FileCompleted.Listener, ZipCompleted.Listen
         if (fileCompleted.isChanged()) {
             if (fileCompleted.getFile().isInsideZip()) {
                 Path originalZipRelativePath = fileCompleted.getFile().getRelativeZipPath();
-                Path newZipPath = getTargetZipRoot().resolve(originalZipRelativePath);;
+                Path newZipPath = getTargetZipRoot().resolve(originalZipRelativePath);
 
                 prepareZip(fileCompleted.getFile().getZipPath(), newZipPath);
                 writeIntoZip(originalZipRelativePath, newZipPath,
@@ -59,13 +59,13 @@ public class FolderWriter implements FileCompleted.Listener, ZipCompleted.Listen
         //Copy the resulting zip back in-place from temp dir
         Path newZipAbsolutePath = getTempRoot().resolve(zipCompleted.getSourceZipRelativePath());
 
-        if (!Files.exists(newZipAbsolutePath)) {
+        if (!LocalFiles.exists(newZipAbsolutePath)) {
             //No changes to this zip file - skipping
             return;
         }
 
         try {
-            Files.move(
+            LocalFiles.move(
                     newZipAbsolutePath,
                     zipCompleted.getSourceZipAbsolutePath(),
                     StandardCopyOption.REPLACE_EXISTING);
@@ -74,8 +74,8 @@ public class FolderWriter implements FileCompleted.Listener, ZipCompleted.Listen
         } catch (IOException ie) {
             Stats.addError(zipCompleted.getSourceZipAbsolutePath().toString(),
                     String.format("Cannot replace %s due to %s",
-                    zipCompleted.getSourceZipAbsolutePath(),
-                    ie));
+                            zipCompleted.getSourceZipAbsolutePath(),
+                            ie));
             log.error("Could not move {} to {}",
                     newZipAbsolutePath,
                     zipCompleted.getSourceZipAbsolutePath(), ie);
@@ -87,8 +87,8 @@ public class FolderWriter implements FileCompleted.Listener, ZipCompleted.Listen
         Path path = root.resolve(file);
         log.info("Save changed file to {}", path);
         try {
-            Files.createDirectories(path.getParent());
-            Files.write(path, replacedLines);
+            LocalFiles.createDirectories(path.getParent());
+            LocalFiles.write(path, replacedLines);
         } catch (IOException e) {
             throw new RuntimeException("Failed to write output to " + path, e);
         }
@@ -112,11 +112,11 @@ public class FolderWriter implements FileCompleted.Listener, ZipCompleted.Listen
     protected void prepareZip(Path sourceZipPath, Path newZipPath) {
         if (!preparedZips.contains(sourceZipPath)) {
             try {
-                if (!Files.exists(newZipPath.getParent())) {
-                    Files.createDirectories(newZipPath.getParent());
+                if (!LocalFiles.exists(newZipPath.getParent())) {
+                    LocalFiles.createDirectories(newZipPath.getParent());
                 }
                 //Overwrite any copies that might be left after previous runs
-                Files.copy(sourceZipPath, newZipPath, StandardCopyOption.REPLACE_EXISTING);
+                LocalFiles.copy(sourceZipPath, newZipPath, StandardCopyOption.REPLACE_EXISTING);
                 log.info("Copied zip {} to {}", sourceZipPath, newZipPath);
 
                 //Mark as prepared. Do not be scared of race conditions,
@@ -141,8 +141,7 @@ public class FolderWriter implements FileCompleted.Listener, ZipCompleted.Listen
 
     private Path getTempRoot() {
         String tmpDir = System.getProperty("java.io.tmpdir");
-        Path egressTempRoot = Paths.get(tmpDir, "egress-tmp");
-        return egressTempRoot;
+        return Paths.get(tmpDir, "egress-tmp");
     }
 
     void init() {

@@ -1,11 +1,11 @@
 package com.bt.code.egress.report;
 
+import com.bt.code.egress.file.LocalFiles;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -29,8 +29,8 @@ public class ReportWriter implements Report.Listener {
         List<Report.ReportLine> reportLines = new ArrayList<>(report.getReportLines());
         reportLines.sort(WRITE_ORDER);
         try {
-            Files.createDirectories(reportFile.getParent());
-            try (BufferedWriter writer = Files.newBufferedWriter(reportFile)) {
+            LocalFiles.createDirectories(reportFile.getParent());
+            try (BufferedWriter writer = LocalFiles.newBufferedWriter(reportFile)) {
                 reportHelper.write(writer, reportLines);
             }
         } catch (IOException e) {

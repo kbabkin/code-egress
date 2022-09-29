@@ -2,30 +2,33 @@ package com.bt.code.egress;
 
 import com.bt.code.egress.process.CsvFileReplacer;
 import com.bt.code.egress.process.FileLocation;
+import com.bt.code.egress.process.FileReplacer;
 import com.bt.code.egress.process.FolderReplacer;
 import com.bt.code.egress.process.JobRunner;
 import com.bt.code.egress.process.LineReplacer;
 import com.bt.code.egress.process.TextFileReplacer;
-import com.bt.code.egress.process.WordReplacer;
+import com.bt.code.egress.process.WordReplacementGenerator;
 import com.bt.code.egress.read.FilePathMatcher;
+import com.bt.code.egress.read.InstructionMatcher;
 import com.bt.code.egress.read.LineGuardIgnoreMatcher;
-import com.bt.code.egress.read.ReportMatcher;
 import com.bt.code.egress.report.ReportCollector;
 import com.bt.code.egress.report.ReportHelper;
 import com.bt.code.egress.report.ReportWriter;
 import com.bt.code.egress.report.Stats;
 import com.bt.code.egress.write.EmptyFolderWriter;
 import com.bt.code.egress.write.FolderWriter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Import;
 
-import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.BiConsumer;
 
 @SpringBootApplication
 @Import(Config.class)
@@ -35,74 +38,121 @@ public class App implements ApplicationRunner {
         SpringApplication.run(App.class, args);
     }
 
-    // Path(".") was resolved as target/classes
-    @Value("${read.folder}")
-    File folder;
-    @Value("${read.threads:10}")
-    int readThreads;
-    @Value("${write.inplace:false}")
-    boolean writeInplace;
-    @Value("${write.folder}")
-    File writeFolder;
-    @Value("${write.report}")
-    File writeReport;
-    @Value("${write.generatedReplacement}")
-    File writeGeneratedReplacement;
-    @Value("${replace.defaultTemplate}")
-    String replaceDefaultTemplate;
-    @Value("${scan.project}")
-    String scanProject;
-    @Value("${scan.config}")
-    String scanConfig;
-
-    @Value("${csv.delim:,}")
-    char csvDelim;
-    @Value("${csv.quote:\"}")
-    char csvQuote;
-    @Value("${csv.commentMarker:#{null}}")
-    Character csvCommentMarker;
-
-    @Value("${context.keepLength:15}")
-    int contextKeepLength;
-    @Value("${context.minCompareLength:1}")
-    int contextMinCompareLength;
 
     @Autowired
     Config config;
 
     @Override
     public void run(ApplicationArguments args) {
-        log.info("Scan project: {}, config: {}", scanProject, scanConfig);
-        log.info("Scanning folder: {}, write inplace: {}", folder, writeInplace);
+        Config.ScanConfig scanConfig = config.getScan();
+        log.info("Scan mode: {}, project: {}, config: {}", scanConfig.getScanMode(), scanConfig.getProject(), scanConfig.getConfig());
+        log.info("Scanning folder: {}, write inplace: {}", config.getRead().getFolder(), config.getWrite().isInplace());
 
         long startedAt = System.currentTimeMillis();
-        FilePathMatcher filePathMatcher = FilePathMatcher.fromConfig(config.read);
-        LineGuardIgnoreMatcher lineMatcher = LineGuardIgnoreMatcher.fromConfigsOptimized(config.word);
-        ReportHelper reportHelper = new ReportHelper(contextKeepLength, contextMinCompareLength);
-        ReportMatcher reportMatcher = ReportMatcher.fromConfigs(reportHelper, config.getAllow().getReportFiles());
-        WordReplacer wordReplacer = new WordReplacer(replaceDefaultTemplate);
-        LineReplacer lineReplacer = new LineReplacer(lineMatcher, reportMatcher, wordReplacer);
-        ReportCollector reportCollector = new ReportCollector(reportHelper);
-        TextFileReplacer textFileReplacer = new TextFileReplacer(lineReplacer, reportCollector);
-        CsvFileReplacer csvFileReplacer = new CsvFileReplacer(textFileReplacer, lineReplacer,
-                reportMatcher, reportHelper, reportCollector, config.csv, csvDelim, csvQuote, csvCommentMarker);
-        FolderWriter folderWriter = writeInplace ? new FolderWriter(folder.toPath()) : new EmptyFolderWriter(writeFolder.toPath());
-        FolderReplacer folderReplacer = new FolderReplacer(csvFileReplacer, filePathMatcher,
-                reportMatcher.getAllowFilePathMatcher(), lineReplacer, reportCollector,
-                folderWriter, folderWriter);
-        ReportWriter reportWriter = new ReportWriter(reportHelper, writeReport.toPath());
-        JobRunner jobRunner = new JobRunner(readThreads);
+
+        RunnerBuilder runnerBuilder = RunnerBuilder.of(config);
+        JobRunner jobRunner = new JobRunner(config.getRead().getThreads());
         log.info("Configured in {} ms", System.currentTimeMillis() - startedAt);
 
         try {
-            folderReplacer.replace(FileLocation.forFile(folder), jobRunner::submit);
+            runnerBuilder.submit(jobRunner::submit);
             jobRunner.run();
-            reportWriter.onReport(reportCollector.toReport());
-            wordReplacer.saveGenerated(writeGeneratedReplacement.toPath());
+            runnerBuilder.close();
         } finally {
-            folderWriter.verify();
             Stats.dump();
             log.info("Processed in {} ms", System.currentTimeMillis() - startedAt);
+        }
+    }
+
+    @RequiredArgsConstructor
+    public static class RunnerBuilder {
+        final Config config;
+        FolderReplacer folderReplacer;
+        List<Runnable> closeListeners = new ArrayList<>();
+
+        public void submit(BiConsumer<String, Runnable> submitter) {
+            folderReplacer.replace(FileLocation.forFile(config.getRead().getFolder()), submitter);
+        }
+
+        public void close() {
+            for (Runnable closeListener : closeListeners) {
+                closeListener.run();
+            }
+        }
+
+        public RunnerBuilder build() {
+            ReportHelper reportHelper = createReportHelper();
+            InstructionMatcher instructionMatcher = createInstructionMatcher(reportHelper);
+            ReportCollector reportCollector = createReportCollector(reportHelper);
+            LineReplacer lineReplacer = createLineReplacer(reportHelper, instructionMatcher, reportCollector);
+            FileReplacer fileReplacer = createFileReplacer(lineReplacer, reportHelper, instructionMatcher, reportCollector);
+            FolderWriter folderWriter = createFolderWriter();
+            folderReplacer = createFolderReplacer(fileReplacer, lineReplacer, instructionMatcher, reportCollector, folderWriter);
+            return this;
+        }
+
+        public static RunnerBuilder of(Config config) {
+            return new RunnerBuilder(config).build();
+        }
+
+        public ReportHelper createReportHelper() {
+            Config.ContextConfig contextConfig = config.getContext();
+            return new ReportHelper(contextConfig.getKeepLength(), contextConfig.getMinCompareLength());
+        }
+
+        public ReportCollector createReportCollector(ReportHelper reportHelper) {
+            ReportCollector reportCollector = new ReportCollector(reportHelper);
+            ReportWriter reportWriter = new ReportWriter(reportHelper, config.getDirectionConfig().getReport().toPath());
+            closeListeners.add(() -> reportWriter.onReport(reportCollector.toReport()));
+            return reportCollector;
+        }
+
+        public InstructionMatcher createInstructionMatcher(ReportHelper reportHelper) {
+            return InstructionMatcher.fromConfigs(reportHelper, config.getDirectionConfig().getInstruction().getFiles());
+        }
+
+        public LineReplacer createLineReplacer(ReportHelper reportHelper, InstructionMatcher instructionMatcher, ReportCollector reportCollector) {
+            Config.DirectionConfig directionConfig = config.getDirectionConfig();
+            LineGuardIgnoreMatcher lineMatcher = LineGuardIgnoreMatcher.fromConfigs(directionConfig.getWord(), instructionMatcher.getSimpleReplacements());
+            WordReplacementGenerator wordReplacementGenerator = Config.ScanDirection.RESTORE.equals(config.getScan().getScanMode())
+                    ? instructionMatcher.getRestoreWordReplacer()
+                    : new WordReplacementGenerator(directionConfig.getDefaultTemplate());
+            ReportCollector restoreInstructionDraftCollector = Config.ScanDirection.RESTORE.equals(config.getScan().getScanMode())
+                    ? null
+                    : new ReportCollector(reportHelper);
+            LineReplacer lineReplacer = new LineReplacer(lineMatcher, reportCollector, restoreInstructionDraftCollector, instructionMatcher, wordReplacementGenerator);
+            if (restoreInstructionDraftCollector != null) {
+                ReportWriter restoreInstructionDraftWriter = new ReportWriter(reportHelper, directionConfig.getRestoreInstructionDraft().toPath());
+                closeListeners.add(() -> restoreInstructionDraftWriter.onReport(restoreInstructionDraftCollector.toReport()));
+            }
+            closeListeners.add(() -> wordReplacementGenerator.saveGenerated(directionConfig.getGeneratedReplacement().toPath()));
+            return lineReplacer;
+        }
+
+        public FileReplacer createFileReplacer(LineReplacer lineReplacer, ReportHelper reportHelper,
+                                               InstructionMatcher instructionMatcher, ReportCollector reportCollector) {
+            TextFileReplacer textFileReplacer = new TextFileReplacer(lineReplacer);
+            //todo for restore csv only non-template
+            return new CsvFileReplacer(textFileReplacer, lineReplacer,
+                    instructionMatcher, reportHelper, reportCollector, config.getCsv());
+        }
+
+        public FolderWriter createFolderWriter() {
+            Config.WriteConfig writeConfig = config.getWrite();
+            FolderWriter folderWriter = writeConfig.isInplace()
+                    ? new FolderWriter(config.getRead().getFolder().toPath())
+                    : new EmptyFolderWriter(writeConfig.getFolder().toPath());
+            closeListeners.add(folderWriter::verify);
+            return folderWriter;
+        }
+
+        public FolderReplacer createFolderReplacer(FileReplacer fileReplacer,
+                                                   LineReplacer lineReplacer, InstructionMatcher instructionMatcher,
+                                                   ReportCollector reportCollector, FolderWriter folderWriter) {
+            FilePathMatcher filePathMatcher = FilePathMatcher.fromConfig(config.getDirectionConfig().getFile());
+            return new FolderReplacer(fileReplacer, filePathMatcher,
+                    instructionMatcher.getAllowFilePathMatcher(), lineReplacer, reportCollector,
+                    folderWriter, folderWriter);
         }
     }
 }

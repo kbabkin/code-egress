@@ -1,7 +1,10 @@
 package com.bt.code.egress;
 
+import com.bt.code.egress.file.LocalFiles;
 import com.bt.code.egress.read.FilePathMatcher;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
@@ -13,9 +16,10 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Configuration;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -34,10 +38,67 @@ import java.util.stream.Collectors;
 @Data
 @Slf4j
 public class Config {
-    MatchingSets read = new MatchingSets();
-    MatchingMaps word = new MatchingMaps();
-    Allow allow = new Allow();
+    ScanConfig scan = new ScanConfig();
+    ReadConfig read = new ReadConfig();
+    WriteConfig write = new WriteConfig();
+    ContextConfig context = new ContextConfig();
+    DirectionConfig replace = new DirectionConfig();
+    DirectionConfig restore = new DirectionConfig();
     CsvReplacementConfig csv = new CsvReplacementConfig();
+
+    public enum ScanDirection {
+        REPLACE,
+        RESTORE
+    }
+
+    @Data
+    public static class ScanConfig {
+        String project;
+        String config;
+        String direction;
+
+        ScanDirection getScanMode() {
+            if (StringUtils.isBlank(direction)) {
+                return ScanDirection.REPLACE;
+            }
+            return ScanDirection.valueOf(direction.toUpperCase());
+        }
+    }
+
+    @Data
+    public static class ReadConfig {
+        // Path(".") was resolved as target/classes
+        File folder;
+        int threads = 10;
+    }
+
+    @Data
+    public static class WriteConfig {
+        boolean inplace = false;
+        File folder;
+    }
+
+    @Data
+    public static class ContextConfig {
+        int keepLength = 15;
+        int minCompareLength = 1;
+    }
+
+    @Getter
+    @Setter
+    public static class DirectionConfig {
+        MatchingSets file = new Config.MatchingSets();
+        MatchingMaps word = new Config.MatchingMaps();
+        InstructionConfig instruction = new InstructionConfig();
+        String defaultTemplate;
+        File report;
+        File restoreInstructionDraft;
+        File generatedReplacement;
+    }
+
+    public Config.DirectionConfig getDirectionConfig() {
+        return ScanDirection.RESTORE.equals(getScan().getScanMode()) ? getRestore() : getReplace();
+    }
 
     @Data
     public static class MatchingSets {
@@ -71,7 +132,7 @@ public class Config {
         static Set<String> load(Set<String> plain, Set<String> files) {
             Set<String> values = new HashSet<>(plain);
             for (String file : files) {
-                try (BufferedReader bufferedReader = Files.newBufferedReader(Paths.get(file))) {
+                try (BufferedReader bufferedReader = LocalFiles.newBufferedReader(Paths.get(file))) {
                     CSVParser records = CSVFormat.DEFAULT.parse(bufferedReader);
                     for (CSVRecord record : records) {
                         values.add(record.get(0));
@@ -127,7 +188,7 @@ public class Config {
         static Map<String, String> load(Map<String, String> plain, Set<String> files) {
             Map<String, String> values = new HashMap<>(plain);
             for (String file : files) {
-                try (BufferedReader bufferedReader = Files.newBufferedReader(Paths.get(file))) {
+                try (BufferedReader bufferedReader = LocalFiles.newBufferedReader(Paths.get(file))) {
                     CSVParser records = CSVFormat.DEFAULT.withCommentMarker('#').parse(bufferedReader);
                     for (CSVRecord record : records) {
                         String key = record.get(0);
@@ -143,8 +204,8 @@ public class Config {
     }
 
     @Data
-    public static class Allow {
-        Set<String> reportFiles = new HashSet<>();
+    public static class InstructionConfig {
+        Set<File> files = new HashSet<>();
     }
 
 
@@ -160,8 +221,11 @@ public class Config {
 
     @Data
     public static class CsvReplacementConfig {
-        Boolean enabled;
-        List<CsvFileConfig> files;
+        boolean enabled = false;
+        char delim = ',';
+        char quote = '"';
+        Character commentMarker = null;
+        List<CsvFileConfig> files = new ArrayList<>();
 
         public CsvFileConfig get(String filename) {
             return files.stream().filter(f -> f.matches(filename)).findFirst().orElse(null);

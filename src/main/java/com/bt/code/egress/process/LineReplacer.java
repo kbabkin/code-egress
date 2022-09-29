@@ -1,10 +1,11 @@
 package com.bt.code.egress.process;
 
+import com.bt.code.egress.read.InstructionMatcher;
 import com.bt.code.egress.read.LineGuardIgnoreMatcher;
 import com.bt.code.egress.read.LineLocation;
 import com.bt.code.egress.read.LineToken;
-import com.bt.code.egress.read.ReportMatcher;
 import com.bt.code.egress.read.WordMatch;
+import com.bt.code.egress.report.Report;
 import com.bt.code.egress.report.Stats;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -16,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -23,8 +25,10 @@ import java.util.stream.Collectors;
 public class LineReplacer {
 
     private final LineGuardIgnoreMatcher lineMatcher;
-    private final ReportMatcher reportMatcher;
-    private final WordReplacer wordReplacer;
+    private final TextMatched.Listener textMatchedListener;
+    private final TextMatched.Listener restoreInstructionDraftListener;
+    private final InstructionMatcher instructionMatcher;
+    private final WordReplacementGenerator wordReplacementGenerator;
 
     @Data
     @AllArgsConstructor
@@ -32,6 +36,19 @@ public class LineReplacer {
         WordMatch wordMatch;
         Boolean allowed;
         WordMatch conflict;
+        String reportReplacement;
+    }
+
+    @Data
+    @AllArgsConstructor
+    static class BackMatch {
+        WordMatch wordMatch;
+        String replacement;
+        int startPos;
+
+        public int getEndPos() {
+            return startPos + replacement.length();
+        }
     }
 
     public List<MatchParam> getMatchParams(String line, LineLocation lineLocation) {
@@ -41,15 +58,19 @@ public class LineReplacer {
         }
 
         List<MatchParam> matchParams = matches.stream()
-                // reportMatcher can return null
-                .map(rm -> new MatchParam(rm, reportMatcher.getAllowed(rm.getLineToken(), lineLocation), null))
+                // instructionMatcher can return null
+                .map(rm -> {
+                    Optional<Report.ReportLine> instruction = instructionMatcher.getInstruction(rm.getLineToken(), lineLocation);
+                    return new MatchParam(rm, instruction.map(Report.ReportLine::getAllow).orElse(null),
+                            null, instruction.map(Report.ReportLine::getReplacement).orElse(null));
+                })
                 .collect(Collectors.toList());
 
         markConflicts(matchParams);
         return matchParams;
     }
 
-    public String replace(String line, LineLocation lineLocation, TextMatched.Listener textMatchedListener) {
+    public String replace(String line, LineLocation lineLocation) {
         List<MatchParam> matchParams = getMatchParams(line, lineLocation);
         if (matchParams.isEmpty()) {
             return line;
@@ -60,11 +81,14 @@ public class LineReplacer {
 
         String processed = null;
         int processedPos = 0;
+        List<BackMatch> backMatches = new ArrayList<>();
         for (MatchParam matchParam : matchParams) {
             WordMatch wordMatch = matchParam.getWordMatch();
             LineToken lineToken = wordMatch.getLineToken();
 
-            String replacement = wordReplacer.replace(wordMatch);
+            String replacement = StringUtils.isNotBlank(matchParam.getReportReplacement())
+                    ? matchParam.getReportReplacement()
+                    : wordReplacementGenerator.replace(wordMatch);
             String comment = wordMatch.getReason();
             if (Boolean.TRUE.equals(matchParam.getAllowed())) {
                 comment = "Allowed, " + wordMatch.getReason() + ", Suggested " + replacement;
@@ -75,6 +99,7 @@ public class LineReplacer {
                 Stats.wordConflict();
                 continue;
             } else {
+                backMatches.add(new BackMatch(wordMatch, replacement, (processed == null ? 0 : processed.length()) + (lineToken.getStartPos() - processedPos)));
                 String withBefore = line.substring(processedPos, lineToken.getStartPos()) + replacement;
                 processed = processed == null ? withBefore : processed + withBefore;
                 processedPos = lineToken.getEndPos();
@@ -84,8 +109,17 @@ public class LineReplacer {
             textMatchedListener.onMatched(new TextMatched(lineLocation, lineToken, matchParam.getAllowed(), replacement,
                     comment));
         }
+        String replacedLine = processed == null ? line : processed + line.substring(processedPos);
+        if (restoreInstructionDraftListener != null) {
+            for (BackMatch backMatch : backMatches) {
+                WordMatch wordMatch = backMatch.getWordMatch();
+                restoreInstructionDraftListener.onMatched(new TextMatched(lineLocation,
+                        new LineToken(replacedLine, backMatch.getStartPos(), backMatch.getEndPos()),
+                        null, wordMatch.getLineToken().getWord(), "Restore " + wordMatch.getReason()));
+            }
+        }
         Stats.wordsMatched(matchParams.size());
-        return processed == null ? line : processed + line.substring(processedPos);
+        return replacedLine;
     }
 
     /**

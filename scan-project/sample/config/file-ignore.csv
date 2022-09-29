@@ -1,2 +1,19 @@
 # file folder (ending with '/') and file name patterns to exclude from scan
 # wildcards: https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/util/AntPathMatcher.html
+**/.git/
+**/.idea/
+**/target/
+**/*.unzip/
+**/*.bin
+**/*.class
+**/*.dll
+**/*.exe
+**/*.ico
+**/*.gif
+**/*.jpg
+**/*.mp4
+**/*.png
+**/*.pyc
+**/*.rpm
+**/*.so
+**/.attach_pid*

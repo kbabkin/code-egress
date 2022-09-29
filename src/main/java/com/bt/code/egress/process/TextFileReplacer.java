@@ -12,10 +12,10 @@ import java.util.List;
 
 @RequiredArgsConstructor
 @Slf4j
-public class TextFileReplacer {
+public class TextFileReplacer implements FileReplacer {
     private final LineReplacer lineReplacer;
-    private final TextMatched.Listener textMatchedListener;
 
+    @Override
     public FileCompleted replace(FileLocation file, BufferedReader bufferedReader) throws IOException {
         log.info("Process file as plain text: {}", file);
 
@@ -24,7 +24,7 @@ public class TextFileReplacer {
         List<String> originalLines = new ArrayList<>();
         List<String> replacedLines = new ArrayList<>();
         while (((line = bufferedReader.readLine()) != null)) {
-            String replace = lineReplacer.replace(line, new LineLocation(file.toReportedPath(), ++lineNum), textMatchedListener);
+            String replace = lineReplacer.replace(line, new LineLocation(file.toReportedPath(), ++lineNum));
             originalLines.add(line);
             replacedLines.add(replace);
         }
