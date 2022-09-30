@@ -6,6 +6,7 @@ import com.bt.code.egress.file.LocalFiles;
 import com.bt.code.egress.report.Stats;
 import com.bt.code.egress.write.FolderMock;
 import com.google.common.collect.ImmutableList;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -61,7 +62,11 @@ public class RestoreTest {
         fileSystem.dump();
     }
 
-    @Test
+    @AfterEach
+    void tearDown() {
+        LocalFiles.setInstance(new LocalFiles.LocalFilesImpl());
+    }
+        @Test
     void testUpperLower() {
         String sampleText = "Company: ACME" +
                 "\nFull name: Acme Corp";

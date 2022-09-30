@@ -54,7 +54,7 @@ replace:
   instruction:
     files:
       - ${scan.config}/replace-instruction.csv # common instructions, utilizing narrowed context, file path patterns
-      - ${replace.report} # results from previous run, overridden after rerun, cleaned by maven, so manual changes in it can be lost
+#      - ${replace.report} # results from previous run, overridden after rerun, cleaned by maven, so manual changes in it can be lost
 
 restore:
   file:

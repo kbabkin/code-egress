@@ -46,10 +46,6 @@ public class WordReplacementGenerator {
     }
 
     public String replace(WordMatch wordMatch) {
-        if (wordMatch.getReplacement() != null) {
-            return wordMatch.getReplacement(); // for configured replacement, csv column template
-        }
-
         String word = wordMatch.getLineToken().getWordLowerCase();
         String generated = generatedMap.get(word);
         if (generated != null) {

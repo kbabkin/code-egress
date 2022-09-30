@@ -36,7 +36,7 @@ public class LineReplacer {
         WordMatch wordMatch;
         Boolean allowed;
         WordMatch conflict;
-        String reportReplacement;
+        String instructionReplacement;
     }
 
     @Data
@@ -86,9 +86,13 @@ public class LineReplacer {
             WordMatch wordMatch = matchParam.getWordMatch();
             LineToken lineToken = wordMatch.getLineToken();
 
-            String replacement = StringUtils.isNotBlank(matchParam.getReportReplacement())
-                    ? matchParam.getReportReplacement()
-                    : wordReplacementGenerator.replace(wordMatch);
+            String replacement =
+                    // wordMatch.replacement - from CSV template
+                    StringUtils.isNotBlank(matchParam.getWordMatch().getReplacement()) ? matchParam.getWordMatch().getReplacement()
+                            // matchParam.instructionReplacement - from instruction
+                            : StringUtils.isNotBlank(matchParam.getInstructionReplacement()) ? matchParam.getInstructionReplacement()
+                            // wordMatch.template - default without context
+                            : wordReplacementGenerator.replace(wordMatch);
             String comment = wordMatch.getReason();
             if (Boolean.TRUE.equals(matchParam.getAllowed())) {
                 comment = "Allowed, " + wordMatch.getReason() + ", Suggested " + replacement;
