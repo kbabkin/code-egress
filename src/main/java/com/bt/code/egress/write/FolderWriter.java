@@ -1,5 +1,6 @@
 package com.bt.code.egress.write;
 
+import com.bt.code.egress.file.KeepEolFiles;
 import com.bt.code.egress.file.LocalFiles;
 import com.bt.code.egress.report.Stats;
 import lombok.Getter;
@@ -8,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.lingala.zip4j.ZipFile;
 import net.lingala.zip4j.model.ZipParameters;
 
+import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -88,7 +90,9 @@ public class FolderWriter implements FileCompleted.Listener, ZipCompleted.Listen
         log.info("Save changed file to {}", path);
         try {
             LocalFiles.createDirectories(path.getParent());
-            LocalFiles.write(path, replacedLines);
+            try (BufferedWriter bufferedWriter = LocalFiles.newBufferedWriter(path)) {
+                KeepEolFiles.write(bufferedWriter, replacedLines);
+            }
         } catch (IOException e) {
             throw new RuntimeException("Failed to write output to " + path, e);
         }

@@ -10,11 +10,11 @@ replace:
       values:
         - "**/*/"
         - "**/*"
-      valuesFiles: [ ]
+      valueFiles: [ ]
     ignore:
       # file folder and file name patterns to exclude from scan
       values: [ ]
-      valuesFiles:
+      valueFiles:
         - "${scan.config}/file-ignore.csv"
 
   word:
@@ -58,10 +58,10 @@ restore:
       values:
         - "**/*/"
         - "**/*"
-      valuesFiles: [ ]
+      valueFiles: [ ]
     ignore:
       values: [ ]
-      valuesFiles:
+      valueFiles:
         - "${scan.config}/file-ignore.csv"
 
   word:

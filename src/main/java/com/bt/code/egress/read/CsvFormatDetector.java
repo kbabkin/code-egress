@@ -1,6 +1,6 @@
 package com.bt.code.egress.read;
 
-import com.bt.code.egress.process.BufferedReaderUtil;
+import com.bt.code.egress.file.BufferedReaderUtil;
 import com.bt.code.egress.process.FileLocation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

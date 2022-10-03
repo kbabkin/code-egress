@@ -1,5 +1,6 @@
-package com.bt.code.egress.process;
+package com.bt.code.egress.file;
 
+import com.bt.code.egress.process.FileLocation;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 

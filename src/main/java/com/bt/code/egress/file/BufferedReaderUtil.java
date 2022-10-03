@@ -1,6 +1,6 @@
-package com.bt.code.egress.process;
+package com.bt.code.egress.file;
 
-import com.bt.code.egress.file.LocalFiles;
+import com.bt.code.egress.process.FileLocation;
 import com.bt.code.egress.report.Stats;
 import lombok.extern.slf4j.Slf4j;
 

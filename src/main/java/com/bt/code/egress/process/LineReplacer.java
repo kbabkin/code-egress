@@ -71,6 +71,9 @@ public class LineReplacer {
     }
 
     public String replace(String line, LineLocation lineLocation) {
+        if (line.length() == 0) {
+            return line;
+        }
         List<MatchParam> matchParams = getMatchParams(line, lineLocation);
         if (matchParams.isEmpty()) {
             return line;

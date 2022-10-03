@@ -16,7 +16,6 @@ public class RestoreWordReplacementGenerator extends WordReplacementGenerator {
 
     @Override
     protected String generate(String word, String template) {
-        //todo template - from word-guard?
         Set<String> set = replacementsByWord.get(word);
         if (set != null && set.size() == 1) {
             return set.iterator().next();
