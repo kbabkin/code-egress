@@ -106,4 +106,8 @@ public class Stats {
                 .map(String::valueOf).collect(Collectors.joining("\n\t")));
     }
 
+    public void reset() {
+        counters.clear();
+        messages.clear();
+    }
 }

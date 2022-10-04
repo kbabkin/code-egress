@@ -54,6 +54,7 @@ public class RestoreTest {
         restoreConfig.getInstruction().getFiles().add(replaceConfig.getRestoreInstructionCumulative());
         restoreConfig.setReport(new File("target/restore-report.csv"));
         restoreConfig.setGeneratedReplacement(new File("target/restore-generated-replacement.csv"));
+        Stats.reset();
     }
 
     void runScan() {
@@ -127,5 +128,6 @@ public class RestoreTest {
         config.getScan().setDirection("restore");
         runScan();
         assertThat(fileSystem.read(sampleTextPath)).isEqualTo(sampleText + addedText);
+        Stats.dump();
     }
 }

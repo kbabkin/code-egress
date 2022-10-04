@@ -12,18 +12,20 @@ import java.util.stream.Stream;
 
 public class RestoreReportWriter extends ReportWriter {
     private final List<Report.ReportLine> prevRestoreInstructions;
+    private final String reportName;
 
-    public RestoreReportWriter(ReportHelper reportHelper, Path reportFile, List<Report.ReportLine> prevRestoreInstructions) {
+    public RestoreReportWriter(ReportHelper reportHelper, Path reportFile, String reportName, List<Report.ReportLine> prevRestoreInstructions) {
         super(reportHelper, reportFile);
         this.prevRestoreInstructions = prevRestoreInstructions;
+        this.reportName = reportName;
     }
 
-    public static RestoreReportWriter fromCumulativeConfig(ReportHelper reportHelper, Path reportFile, Collection<File> instructionFiles) {
+    public static RestoreReportWriter fromCumulativeConfig(ReportHelper reportHelper, Path reportFile, String reportName, Collection<File> instructionFiles) {
         List<Report.ReportLine> prevRestoreInstructions = instructionFiles.stream()
                 .map(file -> reportHelper.read(file.toPath()))
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
-        return new RestoreReportWriter(reportHelper, reportFile, prevRestoreInstructions);
+        return new RestoreReportWriter(reportHelper, reportFile, reportName, prevRestoreInstructions);
     }
 
     @Override
@@ -35,7 +37,7 @@ public class RestoreReportWriter extends ReportWriter {
                 .collect(Collectors.toList());
 
         sortAndWrite(reportLines);
-        Stats.increment("Restore Report Lines - All", reportLines.size());
+        Stats.increment("Restore Report Lines - " + reportName, reportLines.size());
     }
 
     private Stream<Report.ReportLine> filterPrevInstructions(List<Report.ReportLine> lastReportLines) {

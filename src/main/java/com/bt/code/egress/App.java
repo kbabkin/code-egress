@@ -126,9 +126,9 @@ public class App implements ApplicationRunner {
             LineReplacer lineReplacer = new LineReplacer(lineMatcher, reportCollector, restoreInstructionCollector, instructionMatcher, wordReplacementGenerator);
             if (restoreInstructionCollector != null) {
                 RestoreReportWriter restoreInstructionLastWriter = new RestoreReportWriter(reportHelper,
-                        directionConfig.getRestoreInstructionLast().toPath(), Collections.emptyList());
+                        directionConfig.getRestoreInstructionLast().toPath(), "Last", Collections.emptyList());
                 RestoreReportWriter restoreInstructionCumulativeWriter = RestoreReportWriter.fromCumulativeConfig(reportHelper,
-                        directionConfig.getRestoreInstructionCumulative().toPath(), config.getRestore().getInstruction().getFiles());
+                        directionConfig.getRestoreInstructionCumulative().toPath(), "Cumulative", config.getRestore().getInstruction().getFiles());
                 closeListeners.add(() -> {
                     Report report = restoreInstructionCollector.toReport();
                     restoreInstructionLastWriter.onReport(report);
