@@ -11,9 +11,11 @@ import com.bt.code.egress.process.WordReplacementGenerator;
 import com.bt.code.egress.read.FilePathMatcher;
 import com.bt.code.egress.read.InstructionMatcher;
 import com.bt.code.egress.read.LineGuardIgnoreMatcher;
+import com.bt.code.egress.report.Report;
 import com.bt.code.egress.report.ReportCollector;
 import com.bt.code.egress.report.ReportHelper;
 import com.bt.code.egress.report.ReportWriter;
+import com.bt.code.egress.report.RestoreReportWriter;
 import com.bt.code.egress.report.Stats;
 import com.bt.code.egress.write.EmptyFolderWriter;
 import com.bt.code.egress.write.FolderWriter;
@@ -27,6 +29,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Import;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.BiConsumer;
 
@@ -117,13 +120,20 @@ public class App implements ApplicationRunner {
             WordReplacementGenerator wordReplacementGenerator = Config.ScanDirection.RESTORE.equals(config.getScan().getScanMode())
                     ? instructionMatcher.getRestoreWordReplacer()
                     : new WordReplacementGenerator(directionConfig.getDefaultTemplate());
-            ReportCollector restoreInstructionDraftCollector = Config.ScanDirection.RESTORE.equals(config.getScan().getScanMode())
+            ReportCollector restoreInstructionCollector = Config.ScanDirection.RESTORE.equals(config.getScan().getScanMode())
                     ? null
                     : new ReportCollector(reportHelper);
-            LineReplacer lineReplacer = new LineReplacer(lineMatcher, reportCollector, restoreInstructionDraftCollector, instructionMatcher, wordReplacementGenerator);
-            if (restoreInstructionDraftCollector != null) {
-                ReportWriter restoreInstructionDraftWriter = new ReportWriter(reportHelper, directionConfig.getRestoreInstructionDraft().toPath());
-                closeListeners.add(() -> restoreInstructionDraftWriter.onReport(restoreInstructionDraftCollector.toReport()));
+            LineReplacer lineReplacer = new LineReplacer(lineMatcher, reportCollector, restoreInstructionCollector, instructionMatcher, wordReplacementGenerator);
+            if (restoreInstructionCollector != null) {
+                RestoreReportWriter restoreInstructionLastWriter = new RestoreReportWriter(reportHelper,
+                        directionConfig.getRestoreInstructionLast().toPath(), Collections.emptyList());
+                RestoreReportWriter restoreInstructionCumulativeWriter = RestoreReportWriter.fromCumulativeConfig(reportHelper,
+                        directionConfig.getRestoreInstructionCumulative().toPath(), config.getRestore().getInstruction().getFiles());
+                closeListeners.add(() -> {
+                    Report report = restoreInstructionCollector.toReport();
+                    restoreInstructionLastWriter.onReport(report);
+                    restoreInstructionCumulativeWriter.onReport(report);
+                });
             }
             closeListeners.add(() -> wordReplacementGenerator.saveGenerated(directionConfig.getGeneratedReplacement().toPath()));
             return lineReplacer;

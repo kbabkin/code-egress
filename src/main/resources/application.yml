@@ -16,7 +16,8 @@ read:
 replace:
   defaultTemplate: "w{hash}"
   report: ${scan.target}/replace-report.csv
-  restoreInstructionDraft: ${scan.target}/restore-instruction-draft.csv
+  restoreInstructionCumulative: ${scan.target}/restore-instruction-cumulative.csv
+  restoreInstructionLast: ${scan.target}/restore-instruction-last.csv
   generatedReplacement: ${scan.target}/generated-replacement.csv
 
 restore:

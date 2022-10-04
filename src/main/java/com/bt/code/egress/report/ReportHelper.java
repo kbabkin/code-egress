@@ -83,13 +83,13 @@ public class ReportHelper {
 
     public List<Report.ReportLine> read(Path path) {
         if (!LocalFiles.exists(path)) {
-            log.info("Skip missing allow config report file {}", path);
+            log.info("Skip missing instruction file {}", path);
             return Collections.emptyList();
         }
         try (BufferedReader reader = LocalFiles.newBufferedReader(path)) {
             return read(reader);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to read allow config from report file " + path, e);
+            throw new RuntimeException("Failed to read instruction file " + path, e);
         }
     }
 

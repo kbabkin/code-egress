@@ -13,7 +13,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 
 @Slf4j
-public class BufferedReaderUtil {
+public class ReaderCharsetSelector {
 
     public static <T> T doWithBufferedReader(FileLocation file, BufferedReaderFunction<T> function,
                                              Charset... additionalCharsets) throws IOException {

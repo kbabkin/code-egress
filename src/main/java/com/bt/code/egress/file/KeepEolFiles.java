@@ -15,7 +15,7 @@ import java.util.stream.StreamSupport;
 
 public class KeepEolFiles {
     public static Stream<String> read(BufferedReader bufferedReader) {
-        return StreamSupport.stream(new LastEolIterator(bufferedReader), false);
+        return StreamSupport.stream(new LastEolSpliterator(bufferedReader), false);
     }
 
     public static void write(BufferedWriter writer, List<String> lines) throws IOException {
@@ -30,7 +30,7 @@ public class KeepEolFiles {
     }
 
     @RequiredArgsConstructor
-    static class LastEolIterator implements Spliterator<String> {
+    static class LastEolSpliterator implements Spliterator<String> {
         private final BufferedReader bufferedReader;
         private boolean prevEOL;
 

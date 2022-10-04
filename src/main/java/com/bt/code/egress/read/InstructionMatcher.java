@@ -26,8 +26,8 @@ public class InstructionMatcher {
     private final Map<String, List<Report.ReportLine>> rowsByText;
     private final Map<String, Set<String>> replacementsByWord;
 
-    public static InstructionMatcher fromConfigs(ReportHelper reportHelper, Set<File> allowReportFiles) {
-        Map<String, List<Report.ReportLine>> rowsByWord = allowReportFiles.stream()
+    public static InstructionMatcher fromConfigs(ReportHelper reportHelper, Set<File> instructionFiles) {
+        Map<String, List<Report.ReportLine>> rowsByWord = instructionFiles.stream()
                 .map(file -> reportHelper.read(file.toPath()))
                 .flatMap(Collection::stream)
 //                .filter(r -> Objects.nonNull(r.getAllow()))
@@ -40,7 +40,7 @@ public class InstructionMatcher {
         rowsByWord.values().forEach(list -> list.sort(Comparator.comparing(Report.ReportLine::getContext, longerFirst)
                 .thenComparing(Report.ReportLine::getFile, longerFirst)));
 
-        Map<String, Set<String>> replacementsByWord = allowReportFiles.stream()
+        Map<String, Set<String>> replacementsByWord = instructionFiles.stream()
                 .map(file -> reportHelper.read(file.toPath()))
                 .flatMap(Collection::stream)
                 .filter(r -> StringUtils.isNotBlank(r.getText()))

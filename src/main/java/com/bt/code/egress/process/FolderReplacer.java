@@ -1,7 +1,7 @@
 package com.bt.code.egress.process;
 
-import com.bt.code.egress.file.BufferedReaderUtil;
 import com.bt.code.egress.file.LocalFiles;
+import com.bt.code.egress.file.ReaderCharsetSelector;
 import com.bt.code.egress.read.FilePathMatcher;
 import com.bt.code.egress.read.LineLocation;
 import com.bt.code.egress.read.LineToken;
@@ -82,10 +82,10 @@ public class FolderReplacer {
                 } else {
                     submitter.accept(relativeFile.toString(), () -> {
                         try {
-                            BufferedReaderUtil.BufferedReaderFunction<FileCompleted> replacementFunction =
+                            ReaderCharsetSelector.BufferedReaderFunction<FileCompleted> replacementFunction =
                                     bufferedReader -> fileReplacer.replace(relativeFile, bufferedReader);
 
-                            FileCompleted fileCompleted = BufferedReaderUtil.doWithBufferedReader(
+                            FileCompleted fileCompleted = ReaderCharsetSelector.doWithBufferedReader(
                                     file, replacementFunction, StandardCharsets.ISO_8859_1);
 
                             fileCompletedListener.onFileCompleted(fileCompleted);

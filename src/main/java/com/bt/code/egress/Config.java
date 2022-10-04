@@ -92,7 +92,8 @@ public class Config {
         InstructionConfig instruction = new InstructionConfig();
         String defaultTemplate;
         File report;
-        File restoreInstructionDraft;
+        File restoreInstructionCumulative;
+        File restoreInstructionLast;
         File generatedReplacement;
     }
 

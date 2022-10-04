@@ -41,7 +41,8 @@ public class RestoreTest {
         replaceConfig.getWord().getGuard().getPatterns().put("\\w[\\w.-]+@\\w+(\\.\\w+)+", "u{hash}@mail.local");
         replaceConfig.setDefaultTemplate("w{hash}");
         replaceConfig.setReport(new File("target/replace-report.csv"));
-        replaceConfig.setRestoreInstructionDraft(new File("target/restore-instruction-draft.csv"));
+        replaceConfig.setRestoreInstructionCumulative(new File("target/restore-instruction-cumulative.csv"));
+        replaceConfig.setRestoreInstructionLast(new File("target/restore-instruction-last.csv"));
         replaceConfig.setGeneratedReplacement(new File("target/generated-replacement.csv"));
 
         Config.DirectionConfig restoreConfig = config.getRestore();
@@ -50,7 +51,7 @@ public class RestoreTest {
         restoreConfig.getWord().getGuard().getPatterns().put("w\\d{3,}", "");
         restoreConfig.getWord().getGuard().getPatterns().put("h\\d{3,}.domain.local", "");
         restoreConfig.getWord().getGuard().getPatterns().put("u\\d{3,}@mail.local", "");
-        restoreConfig.getInstruction().getFiles().add(replaceConfig.getRestoreInstructionDraft());
+        restoreConfig.getInstruction().getFiles().add(replaceConfig.getRestoreInstructionCumulative());
         restoreConfig.setReport(new File("target/restore-report.csv"));
         restoreConfig.setGeneratedReplacement(new File("target/restore-generated-replacement.csv"));
     }
@@ -66,8 +67,9 @@ public class RestoreTest {
     void tearDown() {
         LocalFiles.setInstance(new LocalFiles.LocalFilesImpl());
     }
-        @Test
-    void testUpperLower() {
+
+    @Test
+    void oldAndNewOccurrences() {
         String sampleText = "Company: ACME" +
                 "\nFull name: Acme Corp";
         fileSystem.write(sampleTextPath, sampleText);
@@ -90,5 +92,40 @@ public class RestoreTest {
         assertThat(fileSystem.readAllLines(config.getRestore().getGeneratedReplacement().toPath())).isEqualTo(ImmutableList.of(
                 "w0123456789,<<NO_RESTORE:w0123456789>>",
                 "w281027120,<<AMBIGUOUS:w281027120:ACME|Acme>>"));
+    }
+
+    @Test
+    void restoreInstructionCumulative() {
+        Config.DirectionConfig replaceConfig = config.getReplace();
+
+        String sampleText = "Company: ACME";
+        fileSystem.write(sampleTextPath, sampleText);
+        runScan();
+        String replacedText = fileSystem.read(sampleTextPath);
+        assertThat(replacedText).isEqualTo(
+                "Company: w281027120");
+        assertThat(fileSystem.readAllLines(replaceConfig.getRestoreInstructionCumulative().toPath())).isEqualTo(ImmutableList.of(
+                "Allow,Text,Context,File,Line,Replacement,Comment",
+                ",w281027120,Company: w281027120,text/sample-text.txt,1,ACME,Restore Value acme"));
+
+        String addedText = "\nFull name: Acme Corp";
+        fileSystem.write(sampleTextPath, replacedText + addedText);
+
+        runScan();
+        assertThat(fileSystem.read(sampleTextPath)).isEqualTo(
+                "Company: w281027120\n" +
+                        "Full name: w281027120 Corp");
+        assertThat(fileSystem.readAllLines(replaceConfig.getRestoreInstructionLast().toPath())).isEqualTo(ImmutableList.of(
+                "Allow,Text,Context,File,Line,Replacement,Comment",
+                ",w281027120,Full name: w281027120 Corp,text/sample-text.txt,2,Acme,Restore Value acme"));
+        assertThat(fileSystem.readAllLines(replaceConfig.getRestoreInstructionCumulative().toPath())).isEqualTo(ImmutableList.of(
+                "Allow,Text,Context,File,Line,Replacement,Comment",
+                ",w281027120,Company: w281027120,text/sample-text.txt,1,ACME,Restore Value acme",
+                ",w281027120,Full name: w281027120 Corp,text/sample-text.txt,2,Acme,Restore Value acme"));
+
+        // restore
+        config.getScan().setDirection("restore");
+        runScan();
+        assertThat(fileSystem.read(sampleTextPath)).isEqualTo(sampleText + addedText);
     }
 }
