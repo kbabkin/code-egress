@@ -182,8 +182,8 @@ public class CsvFileReplacer implements FileReplacer {
         LineToken joinedLineToken = new JoinedLineToken(joinedWord.toLowerCase(), joinedContext);
         LineLocation joinedLineLocation = new LineLocation(reportedPath, 0);
 
-        Boolean allowed = instructionMatcher.getInstruction(joinedLineToken, joinedLineLocation)
-                .map(Report.ReportLine::getAllow).orElse(null);
+        Report.ReportLine instruction = instructionMatcher.getInstruction(joinedLineToken, joinedLineLocation);
+        Boolean allowed = instruction != null ? instruction.getAllow() : null;
 
         textMatchedListener.onMatched(new TextMatched(joinedLineLocation, joinedLineToken, allowed, joinedReplacement,
                 "CSV Column Template"));

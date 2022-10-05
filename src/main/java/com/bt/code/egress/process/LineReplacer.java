@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -34,9 +34,20 @@ public class LineReplacer {
     @AllArgsConstructor
     static class MatchParam {
         WordMatch wordMatch;
-        Boolean allowed;
+        Report.ReportLine instruction;
         WordMatch conflict;
-        String instructionReplacement;
+
+        Boolean getAllowed() {
+            return instruction != null ? instruction.getAllow() : null;
+        }
+
+        String getInstructionReplacement() {
+            return instruction != null ? instruction.getReplacement() : null;
+        }
+
+        String getInstructionComment() {
+            return instruction != null ? instruction.getComment() : null;
+        }
     }
 
     @Data
@@ -59,11 +70,7 @@ public class LineReplacer {
 
         List<MatchParam> matchParams = matches.stream()
                 // instructionMatcher can return null
-                .map(rm -> {
-                    Optional<Report.ReportLine> instruction = instructionMatcher.getInstruction(rm.getLineToken(), lineLocation);
-                    return new MatchParam(rm, instruction.map(Report.ReportLine::getAllow).orElse(null),
-                            null, instruction.map(Report.ReportLine::getReplacement).orElse(null));
-                })
+                .map(rm -> new MatchParam(rm, instructionMatcher.getInstruction(rm.getLineToken(), lineLocation), null))
                 .collect(Collectors.toList());
 
         markConflicts(matchParams);
@@ -89,21 +96,31 @@ public class LineReplacer {
             WordMatch wordMatch = matchParam.getWordMatch();
             LineToken lineToken = wordMatch.getLineToken();
 
-            String replacement =
-                    // wordMatch.replacement - from CSV template
-                    StringUtils.isNotBlank(matchParam.getWordMatch().getReplacement()) ? matchParam.getWordMatch().getReplacement()
-                            // matchParam.instructionReplacement - from instruction
-                            : StringUtils.isNotBlank(matchParam.getInstructionReplacement()) ? matchParam.getInstructionReplacement()
-                            // wordMatch.template - default without context
-                            : wordReplacementGenerator.replace(wordMatch);
-            String comment = wordMatch.getReason();
+            String replacement;
+            String comment;
+            if (StringUtils.isNotBlank(matchParam.getWordMatch().getReplacement())) {
+                // wordMatch.replacement - from CSV template
+                replacement = matchParam.getWordMatch().getReplacement();
+                comment = wordMatch.getReason();
+            } else if (StringUtils.isNotBlank(matchParam.getInstructionReplacement())) {
+                // matchParam.instructionReplacement - from instruction
+                replacement = matchParam.getInstructionReplacement();
+                comment = "Instruction " + matchParam.getInstructionComment();
+            } else {
+                // wordMatch.template - default without context
+                replacement = wordReplacementGenerator.replace(wordMatch);
+                comment = "Generated for " + wordMatch.getReason();
+            }
+
             if (Boolean.TRUE.equals(matchParam.getAllowed())) {
-                comment = "Allowed, " + wordMatch.getReason() + ", Suggested " + replacement;
+                comment = "Allowed: " + wordMatch.getReason() + ", Suggested: " + replacement;
                 replacement = null;
             } else if (matchParam.getConflict() != null) {
-                log.info("CONFLICT OF {}->{} ({}) WITH {} ({})", wordMatch.getLineToken().getWord(), replacement, wordMatch.getReason(),
-                        matchParam.getConflict().getLineToken().getWord(), matchParam.getConflict().getReason());
-                Stats.wordConflict();
+                if (!Objects.equals(wordMatch.getLineToken(), matchParam.getConflict().getLineToken())) {
+                    log.info("CONFLICT: {}->{} ({}) IS OVERRIDDEN BY {} ({})", wordMatch.getLineToken().getWord(), replacement, wordMatch.getReason(),
+                            matchParam.getConflict().getLineToken().getWord(), matchParam.getConflict().getReason());
+                    Stats.wordConflict();
+                }
                 continue;
             } else {
                 backMatches.add(new BackMatch(wordMatch, replacement, (processed == null ? 0 : processed.length()) + (lineToken.getStartPos() - processedPos)));

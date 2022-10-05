@@ -21,9 +21,9 @@ import java.nio.file.Paths;
 import java.nio.file.attribute.FileAttribute;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,8 +31,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Slf4j
 @RequiredArgsConstructor
 public class FolderMock extends LocalFiles.LocalFilesImpl {
-    private final Map<String, FolderMock> folders = new HashMap<>();
-    private final Map<String, String> files = new HashMap<>();
+    private final Map<String, FolderMock> folders = new TreeMap<>();
+    private final Map<String, String> files = new TreeMap<>();
     @Getter
     private final Path ownPath;
 

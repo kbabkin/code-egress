@@ -54,14 +54,15 @@ public class RestoreTest {
         restoreConfig.getInstruction().getFiles().add(replaceConfig.getRestoreInstructionCumulative());
         restoreConfig.setReport(new File("target/restore-report.csv"));
         restoreConfig.setGeneratedReplacement(new File("target/restore-generated-replacement.csv"));
-        Stats.reset();
     }
 
     void runScan() {
+        Stats.reset();
         App.RunnerBuilder runnerBuilder = App.RunnerBuilder.of(config);
         runnerBuilder.submit(JobRunner.DIRECT_RUNNER);
         runnerBuilder.close();
         fileSystem.dump();
+        Stats.dump();
     }
 
     @AfterEach
@@ -70,7 +71,21 @@ public class RestoreTest {
     }
 
     @Test
-    void oldAndNewOccurrences() {
+    void simple() {
+        String sampleText = "Company: ACME";
+        fileSystem.write(sampleTextPath, sampleText);
+        runScan();
+        String replacedText = fileSystem.read(sampleTextPath);
+        assertThat(replacedText).isEqualTo("Company: w281027120");
+
+        // restore
+        config.getScan().setDirection("restore");
+        runScan();
+        assertThat(fileSystem.read(sampleTextPath)).isEqualTo(sampleText);
+    }
+
+    @Test
+    void newOccurrences() {
         String sampleText = "Company: ACME" +
                 "\nFull name: Acme Corp";
         fileSystem.write(sampleTextPath, sampleText);
@@ -86,7 +101,6 @@ public class RestoreTest {
                 "\nNew usage: w281027120" +
                 "\nNon-existing: w0123456789");
         runScan();
-        Stats.dump();
         assertThat(fileSystem.read(sampleTextPath)).isEqualTo(sampleText +
                 "\nNew usage: <<AMBIGUOUS:w281027120:ACME|Acme>>" +
                 "\nNon-existing: <<NO_RESTORE:w0123456789>>");
@@ -123,11 +137,12 @@ public class RestoreTest {
                 "Allow,Text,Context,File,Line,Replacement,Comment",
                 ",w281027120,Company: w281027120,text/sample-text.txt,1,ACME,Restore Value acme",
                 ",w281027120,Full name: w281027120 Corp,text/sample-text.txt,2,Acme,Restore Value acme"));
+        assertThat(Stats.get("Restore Report Lines - Last")).isEqualTo(1);
+        assertThat(Stats.get("Restore Report Lines - Cumulative")).isEqualTo(2);
 
         // restore
         config.getScan().setDirection("restore");
         runScan();
         assertThat(fileSystem.read(sampleTextPath)).isEqualTo(sampleText + addedText);
-        Stats.dump();
     }
 }

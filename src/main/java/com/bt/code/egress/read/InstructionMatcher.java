@@ -51,12 +51,12 @@ public class InstructionMatcher {
     }
 
 
-    public Optional<Report.ReportLine> getInstruction(LineToken lineToken, LineLocation lineLocation) {
+    public Report.ReportLine getInstruction(LineToken lineToken, LineLocation lineLocation) {
         String word = lineToken.getWordLowerCase();
         String wordContext = lineToken.getContext(reportHelper);
         List<Report.ReportLine> reportLines = rowsByText.get(word);
         if (reportLines == null || reportLines.isEmpty()) {
-            return Optional.empty();
+            return null;
         }
 
         String tokenContext = wordContext.toLowerCase();
@@ -81,7 +81,7 @@ public class InstructionMatcher {
                                 && r.getLine().equals(lineLocation.getLineNum()) ? 0 : 1));
 
         optionalAllowed.ifPresent(allowed -> log.info("Report allowed: {} for {}, {}, {}", allowed, word, wordContext, lineLocation));
-        return optionalAllowed;
+        return optionalAllowed.orElse(null);
     }
 
     public FilePathMatcher getAllowFilePathMatcher() {
