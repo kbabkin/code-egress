@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -17,14 +18,28 @@ public class LineGuardIgnoreMatcher implements LineMatcher {
     private final LineMatcher guardMatcher;
     private final WordMatcher ignoreMatcher;
 
-    public static LineGuardIgnoreMatcher fromConfigs(Config.MatchingMaps matchingMaps) {
+    public static LineGuardIgnoreMatcher fromConfigsRaw(Config.MatchingMaps matchingMaps) {
         LineMatcher guard = BasicLineMatcher.fromConfig(matchingMaps.getGuard());
         WordMatcher ignore = BasicWordMatcher.fromConfig(matchingMaps.getIgnore()).patternPartOfWord();
         return new LineGuardIgnoreMatcher(guard, ignore);
     }
 
-    public static LineGuardIgnoreMatcher fromConfigsOptimized(Config.MatchingMaps matchingMaps) {
+    public static LineGuardIgnoreMatcher fromConfigs(Config.MatchingMaps matchingMaps) {
         Config.MatchingMap.ValuesAndPatternsMap guardVnP = matchingMaps.getGuard().load();
+        Config.MatchingSet.ValuesAndPatternsSet ignoreVnP = matchingMaps.getIgnore().load();
+        return fromConfigs(guardVnP, ignoreVnP);
+    }
+
+    public static LineGuardIgnoreMatcher fromConfigs(Config.MatchingMaps matchingMaps, Map<String, String> instructionReplacements) {
+        Config.MatchingMap.ValuesAndPatternsMap guardVnP = matchingMaps.getGuard().load();
+        Config.MatchingSet.ValuesAndPatternsSet ignoreVnP = matchingMaps.getIgnore().load();
+        Map<String, String> guardValues = new HashMap<>(guardVnP.getValues());
+        instructionReplacements.forEach((word, replacement) -> guardValues.computeIfAbsent(word, n -> replacement));
+        return fromConfigs(new Config.MatchingMap.ValuesAndPatternsMap(guardValues, guardVnP.getPatterns()), ignoreVnP);
+    }
+
+    private static LineGuardIgnoreMatcher fromConfigs(Config.MatchingMap.ValuesAndPatternsMap guardVnP,
+                                                      Config.MatchingSet.ValuesAndPatternsSet ignoreVnP) {
         Set<String> wholeWords = guardVnP.getValues().keySet().stream()
                 .filter(w -> {
                     for (int i = 0; i < w.length(); i++) {
@@ -43,7 +58,7 @@ public class LineGuardIgnoreMatcher implements LineMatcher {
 
         LineMatcher guard = new BasicLineMatcher(phrases, guardVnP.getPatterns())
                 .and(new LineTokenMatcher(new BasicWordMatcher(words, Collections.emptyMap())));
-        WordMatcher ignore = BasicWordMatcher.fromConfig(matchingMaps.getIgnore()).patternPartOfWord();
+        WordMatcher ignore = BasicWordMatcher.fromConfig(ignoreVnP).patternPartOfWord();
         return new LineGuardIgnoreMatcher(guard, ignore);
     }
 

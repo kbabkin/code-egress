@@ -20,6 +20,11 @@ public class Stats {
     @Getter
     private final Map<String, Set<String>> messages = new ConcurrentHashMap<>();
 
+    public long get(String name) {
+        AtomicLong value = counters.get(name);
+        return value == null ? 0L : value.get();
+    }
+
     public void increment(String name, int byValue) {
         AtomicLong value = counters.computeIfAbsent(name, k -> new AtomicLong());
         value.addAndGet(byValue);
@@ -106,4 +111,8 @@ public class Stats {
                 .map(String::valueOf).collect(Collectors.joining("\n\t")));
     }
 
+    public void reset() {
+        counters.clear();
+        messages.clear();
+    }
 }

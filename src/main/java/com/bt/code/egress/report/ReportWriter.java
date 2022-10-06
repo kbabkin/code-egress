@@ -1,11 +1,11 @@
 package com.bt.code.egress.report;
 
+import com.bt.code.egress.file.LocalFiles;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -25,17 +25,8 @@ public class ReportWriter implements Report.Listener {
 
     @Override
     public void onReport(Report report) {
-        log.info("Writing status file: {}", reportFile);
         List<Report.ReportLine> reportLines = new ArrayList<>(report.getReportLines());
-        reportLines.sort(WRITE_ORDER);
-        try {
-            Files.createDirectories(reportFile.getParent());
-            try (BufferedWriter writer = Files.newBufferedWriter(reportFile)) {
-                reportHelper.write(writer, reportLines);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to write status file " + reportFile, e);
-        }
+        sortAndWrite(reportLines);
         Stats.increment("Report Lines - All", reportLines.size());
         Stats.increment("Report Lines - Allow", (int) reportLines.stream()
                 .filter(rl -> Boolean.TRUE.equals(rl.getAllow()))
@@ -46,5 +37,18 @@ public class ReportWriter implements Report.Listener {
         Stats.increment("Report Lines - To Review", (int) reportLines.stream()
                 .filter(rl -> rl.getAllow() == null)
                 .count());
+    }
+
+    protected void sortAndWrite(List<Report.ReportLine> reportLines) {
+        log.info("Writing report file: {}", reportFile);
+        reportLines.sort(WRITE_ORDER);
+        try {
+            LocalFiles.createDirectories(reportFile.getParent());
+            try (BufferedWriter writer = LocalFiles.newBufferedWriter(reportFile)) {
+                reportHelper.write(writer, reportLines);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to write report file " + reportFile, e);
+        }
     }
 }

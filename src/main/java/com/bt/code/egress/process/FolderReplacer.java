@@ -1,5 +1,7 @@
 package com.bt.code.egress.process;
 
+import com.bt.code.egress.file.LocalFiles;
+import com.bt.code.egress.file.ReaderCharsetSelector;
 import com.bt.code.egress.read.FilePathMatcher;
 import com.bt.code.egress.read.LineLocation;
 import com.bt.code.egress.read.LineToken;
@@ -12,7 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -21,7 +22,7 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 @Slf4j
 public class FolderReplacer {
-    private final CsvFileReplacer fileReplacer;
+    private final FileReplacer fileReplacer;
     private final FilePathMatcher filePathMatcher;
     private final FilePathMatcher allowFilePathMatcher;
     private final LineReplacer lineReplacer;
@@ -34,7 +35,7 @@ public class FolderReplacer {
     }
 
     void replace(FileLocation folder, FileLocation rootFolder, BiConsumer<String, Runnable> submitter) {
-        if (!Files.isDirectory(folder.getFilePath())) {
+        if (!LocalFiles.isDirectory(folder.getFilePath())) {
             throw new RuntimeException("Not a folder: " + folder);
         }
         try (Stream<FileLocation> files = folder.list()) {
@@ -44,7 +45,7 @@ public class FolderReplacer {
                 String name = relativeFile.toString().toLowerCase();
                 String reportedPath = relativeFile.toReportedPath();
                 LineLocation lineLocation = new LineLocation(reportedPath, 0);
-                if (Files.isDirectory(file.getFilePath())) {
+                if (LocalFiles.isDirectory(file.getFilePath())) {
                     if (filePathMatcher.match(name + "/")) {
                         List<LineReplacer.MatchParam> fileNameMatches = lineReplacer.getMatchParams(relativeFile.getFilename(), lineLocation);
                         for (LineReplacer.MatchParam fileNameMatch : fileNameMatches) {
@@ -81,10 +82,10 @@ public class FolderReplacer {
                 } else {
                     submitter.accept(relativeFile.toString(), () -> {
                         try {
-                            BufferedReaderUtil.BufferedReaderFunction<FileCompleted> replacementFunction =
+                            ReaderCharsetSelector.BufferedReaderFunction<FileCompleted> replacementFunction =
                                     bufferedReader -> fileReplacer.replace(relativeFile, bufferedReader);
 
-                            FileCompleted fileCompleted = BufferedReaderUtil.doWithBufferedReader(
+                            FileCompleted fileCompleted = ReaderCharsetSelector.doWithBufferedReader(
                                     file, replacementFunction, StandardCharsets.ISO_8859_1);
 
                             fileCompletedListener.onFileCompleted(fileCompleted);
@@ -121,7 +122,7 @@ public class FolderReplacer {
 
     static boolean isZipFile(Path file) {
         byte[] bytes = new byte[4];
-        try (InputStream fIn = Files.newInputStream(file)) {
+        try (InputStream fIn = LocalFiles.newInputStream(file)) {
             if (fIn.read(bytes) != 4) {
                 return false;
             }
