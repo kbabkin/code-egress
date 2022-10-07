@@ -1,6 +1,7 @@
 package com.bt.code.egress.process;
 
 import com.bt.code.egress.Config;
+import com.bt.code.egress.file.LocalFiles;
 import com.bt.code.egress.read.CsvFormatDetector;
 import com.bt.code.egress.read.InstructionMatcher;
 import com.bt.code.egress.read.LineLocation;
@@ -20,8 +21,10 @@ import org.apache.commons.csv.QuoteMode;
 import org.apache.commons.text.StringSubstitutor;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -29,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -42,6 +46,7 @@ public class CsvFileReplacer implements FileReplacer {
     private final CSVFormat writeCsvFormat;
     private final CSVFormat readCsvFormat;
     private final CsvFormatDetector csvFormatDetector;
+    private final Set<String> templateReplaced = new ConcurrentSkipListSet<>();
 
     public CsvFileReplacer(TextFileReplacer textFileReplacer, LineReplacer lineReplacer, InstructionMatcher instructionMatcher,
                            ReportHelper reportHelper, TextMatched.Listener textMatchedListener,
@@ -161,7 +166,11 @@ public class CsvFileReplacer implements FileReplacer {
             StringSubstitutor csvSubstitutor = guardedColumns.getStringSubstitutor(originalRecord);
             for (int i = 0; i < guardedColumns.size() && i < originalRecord.size(); i++) {
                 String cell = originalRecord.get(i);
-                String replace = guardedColumns.isGuarded(i)
+                boolean guarded = guardedColumns.isGuarded(i);
+                if (guarded) {
+                    templateReplaced.add(cell.trim().toLowerCase());
+                }
+                String replace = guarded
                         ? (Boolean.TRUE.equals(allowed) ? cell : csvSubstitutor.replace(guardedColumns.getTemplate(i)))
                         : lineReplacer.replace(cell, lineLocation);
                 replacedRecord.add(replace);
@@ -265,5 +274,24 @@ public class CsvFileReplacer implements FileReplacer {
         public String getContext(ReportHelper reportHelper) {
             return context;
         }
+    }
+
+    public void saveTemplateReplaced(Path templateReplacedPath) {
+        if (templateReplaced.isEmpty()) {
+            log.info("No template replaced");
+            return;
+        }
+
+        log.info("Writing generated replacements to {}", templateReplacedPath);
+        try (BufferedWriter writer = LocalFiles.newBufferedWriter(templateReplacedPath)) {
+            try (CSVPrinter printer = new CSVPrinter(writer, CSVFormat.DEFAULT)) {
+                for (String w : templateReplaced) {
+                    printer.printRecord(w);
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to write CVS TemplateReplaced to " + templateReplacedPath, e);
+        }
+        Stats.increment("Words CSV TemplateReplaced", templateReplaced.size());
     }
 }

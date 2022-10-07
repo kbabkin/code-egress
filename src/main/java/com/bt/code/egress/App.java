@@ -143,8 +143,10 @@ public class App implements ApplicationRunner {
                                                InstructionMatcher instructionMatcher, ReportCollector reportCollector) {
             TextFileReplacer textFileReplacer = new TextFileReplacer(lineReplacer);
             //todo for restore csv only non-template
-            return new CsvFileReplacer(textFileReplacer, lineReplacer,
+            CsvFileReplacer csvFileReplacer = new CsvFileReplacer(textFileReplacer, lineReplacer,
                     instructionMatcher, reportHelper, reportCollector, config.getCsv());
+            closeListeners.add(() -> csvFileReplacer.saveTemplateReplaced(config.getCsv().getTemplateReplaced().toPath()));
+            return csvFileReplacer;
         }
 
         public FolderWriter createFolderWriter() {

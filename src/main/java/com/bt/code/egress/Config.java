@@ -226,6 +226,7 @@ public class Config {
         char delim = ',';
         char quote = '"';
         Character commentMarker = null;
+        File templateReplaced;
         List<CsvFileConfig> files = new ArrayList<>();
 
         public CsvFileConfig get(String filename) {

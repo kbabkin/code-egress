@@ -93,6 +93,7 @@ restore:
 
 csv:
   enabled: true
+  templateReplaced: ${scan.target}/csv-template-replaced.csv
   files:
     - filename: "*LegalEntity*.csv"
       columns:
