@@ -1,74 +1,95 @@
 read:
-  folder: "."
-  guard:
-    # file folder (ending with '/') and file name patterns to include in scan
-    # wildcards: https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/util/AntPathMatcher.html
-    values:
-      - "**/*/"
-      - "**/*"
-    valuesFiles: [ ]
-  ignore:
-    # file folder and file name patterns to exclude from scan
-    values:
-      - "**/.git/"
-      - "**/.idea/"
-      - "**/target/"
-      - "**/*.unzip/"
-      - "**/*.bin"
-      - "**/*.class"
-      - "**/*.dll"
-      - "**/*.exe"
-      - "**/*.ico"
-      - "**/*.gif"
-      - "**/*.jpg"
-      - "**/*.mp4"
-      - "**/*.png"
-      - "**/*.pyc"
-      - "**/*.rpm"
-      - "**/*.so"
-      - "**/code-report.csv"
-      - "**/.attach_pid*"
-    valuesFiles: [ ]
+  folder: "src/test/resources/testdata"
 
-word:
-  guard:
-    values:
-      ## Mappings of "from" and "to" word replacements. "To" can be empty, will be generated. Examples:
-      "acme": "testCompany"
-      "sample": ""
-      "123": ""
-      "Dummy": "D"
-      "Yuppi": "Y"
-      "[guard@acme.com]": "replaced@mail.local"
-    patterns:
-      ## Mappings of "from" and "to" pattern replacements. "To" can contain template variables, can be empty.
-      "[\\w[\\w.-]+@\\w+(\\.\\w+)+]": "u{hash}@mail.local"
-      "[\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}]": "h{hash}.domain.local"
-      "[\\w[\\w.-]+\\.intra]": "h{hash}.domain.local"
-    valueFiles:
-      # Long list of words can be extracted to separate files in config folder
-      - "${scan.config}/word-guard-value.csv"
-    patternFiles:
-      # Long list of patterns can be extracted to separate files in config folder
-      - "${scan.config}/word-guard-pattern.csv"
+replace:
+  file:
+    guard:
+      # file folder (ending with '/') and file name patterns to include in scan
+      # wildcards: https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/util/AntPathMatcher.html
+      values:
+        - "**/*/"
+        - "**/*"
+      valueFiles: [ ]
+    ignore:
+      # file folder and file name patterns to exclude from scan
+      values: [ ]
+      valueFiles:
+        - "${scan.config}/file-ignore.csv"
 
-  ignore:
-    values:
-      - "localhost"
-      - "127.0.0.1"
-      - "0.0.0.0"
-      - "ignore@acme.com"
-    patterns: # ignore pattern is searched, use ^..$ to match complete word
-      - "@mail.local$"
-    valueFiles: [ ]
-    patternFiles: [ ]
+  word:
+    guard:
+      values:
+        ## Mappings of "from" and "to" word replacements. "To" can be empty, will be generated. Examples:
+        "acme": "testCompany"
+        "sample": ""
+        "123": ""
+        "Dummy": "D"
+        "Yuppi": "Y"
+        "[guard@acme.com]": "replaced@mail.local"
+      patterns:
+        ## Mappings of "from" and "to" pattern replacements. "To" can contain template variables, can be empty.
+        "[\\w[\\w.-]+@\\w+(\\.\\w+)+]": "u{hash}@mail.local"
+        "[\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}]": "h{hash}.domain.local"
+        "[\\w[\\w.-]+\\.intra]": "h{hash}.domain.local"
+      valueFiles:
+        # Long list of words can be extracted to separate files in config folder
+        - "${scan.config}/word-guard-value.csv"
+      patternFiles:
+        # Long list of patterns can be extracted to separate files in config folder
+        - "${scan.config}/word-guard-pattern.csv"
+
+    ignore:
+      values:
+        - "localhost"
+        - "127.0.0.1"
+        - "0.0.0.0"
+        - "ignore@acme.com"
+      patterns: # ignore pattern is searched, use ^..$ to match complete word
+        - "@mail.local$"
+      valueFiles: [ ]
+      patternFiles: [ ]
 
 
-# Manual override for false-positives
-allow:
-  reportFiles:
-    - ${scan.config}/allow-report.csv # common false-positives, utilizing narrowed context, file path patterns
-    - ${write.report} # results from previous run, overridden after rerun, cleaned by maven, so manual changes in it can be lost
+  # Manual markup for false-positives, context-dependent replacements.
+  instruction:
+    files:
+      - ${scan.config}/replace-instruction.csv # common instructions, utilizing narrowed context, file path patterns
+#      - ${replace.report} # results from previous run, overridden after rerun, cleaned by maven, so manual changes in it can be lost
+
+restore:
+  file:
+    guard:
+      values:
+        - "**/*/"
+        - "**/*"
+      valueFiles: [ ]
+    ignore:
+      values: [ ]
+      valueFiles:
+        - "${scan.config}/file-ignore.csv"
+
+  word:
+    guard:
+      values: [ ]
+      patterns:
+        ## Mappings of "from" and "to" pattern replacements. "To" can be empty, to be taken from instruction.
+        "[w\\d{3,}]": ""
+        "[h\\d{3,}.domain.local]": ""
+        "[u\\d{3,}@mail.local]": ""
+      valueFiles: [ ]
+      patternFiles: [ ]
+
+    ignore:
+      values: [ ]
+      patterns: [ ] # ignore pattern is searched, use ^..$ to match complete word
+      valueFiles: [ ]
+      patternFiles: [ ]
+
+  # Manual markup for false-positives, context-dependent replacements.
+  instruction:
+    files:
+      - ${scan.config}/restore-instruction.csv
+      - ${replace.restoreInstructionDraft} # results from previous replace, overridden after rerun, cleaned by maven, so manual changes in it can be lost
 
 csv:
   enabled: true

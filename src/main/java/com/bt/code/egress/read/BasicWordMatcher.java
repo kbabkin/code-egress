@@ -25,6 +25,10 @@ public class BasicWordMatcher implements WordMatcher {
 
     public static BasicWordMatcher fromConfig(Config.MatchingSet matchingSet) {
         Config.MatchingSet.ValuesAndPatternsSet valuesAndPatterns = matchingSet.load();
+        return fromConfig(valuesAndPatterns);
+    }
+
+    public static BasicWordMatcher fromConfig(Config.MatchingSet.ValuesAndPatternsSet valuesAndPatterns) {
         return new BasicWordMatcher(valuesAndPatterns.getValues().stream().collect(Collectors.toMap(Function.identity(), e -> "")),
                 valuesAndPatterns.getPatterns().stream().collect(Collectors.toMap(Function.identity(), e -> "")));
     }

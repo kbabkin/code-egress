@@ -1,0 +1,17 @@
+**/.git/
+**/.idea/
+**/target/
+**/*.unzip/
+**/*.bin
+**/*.class
+**/*.dll
+**/*.exe
+**/*.ico
+**/*.gif
+**/*.jpg
+**/*.mp4
+**/*.png
+**/*.pyc
+**/*.rpm
+**/*.so
+**/.attach_pid*

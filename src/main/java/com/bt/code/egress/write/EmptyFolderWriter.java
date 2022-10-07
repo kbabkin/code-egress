@@ -1,14 +1,10 @@
 package com.bt.code.egress.write;
 
-import com.bt.code.egress.report.Stats;
+import com.bt.code.egress.file.LocalFiles;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Stream;
 
 @Slf4j
@@ -26,14 +22,14 @@ public class EmptyFolderWriter extends FolderWriter {
             return;
         }
         try {
-            if (Files.exists(getRoot())) {
-                try (Stream<Path> list = Files.list(getRoot())) {
+            if (LocalFiles.exists(getRoot())) {
+                try (Stream<Path> list = LocalFiles.list(getRoot())) {
                     long count = list.count();
                     wasEmpty = count == 0;
 
                 }
             } else {
-                Files.createDirectories(getRoot());
+                LocalFiles.createDirectories(getRoot());
                 wasEmpty = true;
             }
             inited = true;

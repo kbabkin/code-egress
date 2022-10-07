@@ -2,10 +2,11 @@ package com.bt.code.egress.process;
 
 import com.bt.code.egress.Config;
 import com.bt.code.egress.read.CsvFormatDetector;
+import com.bt.code.egress.read.InstructionMatcher;
 import com.bt.code.egress.read.LineLocation;
 import com.bt.code.egress.read.LineToken;
-import com.bt.code.egress.read.ReportMatcher;
 import com.bt.code.egress.read.WordMatch;
+import com.bt.code.egress.report.Report;
 import com.bt.code.egress.report.ReportHelper;
 import com.bt.code.egress.report.Stats;
 import com.bt.code.egress.write.FileCompleted;
@@ -31,10 +32,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class CsvFileReplacer {
+public class CsvFileReplacer implements FileReplacer {
     private final TextFileReplacer textFileReplacer;
     private final LineReplacer lineReplacer;
-    private final ReportMatcher reportMatcher;
+    private final InstructionMatcher instructionMatcher;
     private final ReportHelper reportHelper;
     private final TextMatched.Listener textMatchedListener;
     private final Config.CsvReplacementConfig csvConfig;
@@ -42,24 +43,28 @@ public class CsvFileReplacer {
     private final CSVFormat readCsvFormat;
     private final CsvFormatDetector csvFormatDetector;
 
-    public CsvFileReplacer(TextFileReplacer textFileReplacer, LineReplacer lineReplacer, ReportMatcher reportMatcher,
+    public CsvFileReplacer(TextFileReplacer textFileReplacer, LineReplacer lineReplacer, InstructionMatcher instructionMatcher,
                            ReportHelper reportHelper, TextMatched.Listener textMatchedListener,
-                           Config.CsvReplacementConfig csvConfig, char csvDelim, char csvQuote, Character commentMarker) {
+                           Config.CsvReplacementConfig csvConfig) {
         this.textFileReplacer = textFileReplacer;
         this.lineReplacer = lineReplacer;
-        this.reportMatcher = reportMatcher;
+        this.instructionMatcher = instructionMatcher;
         this.reportHelper = reportHelper;
         this.textMatchedListener = textMatchedListener;
         this.csvConfig = csvConfig;
-        this.writeCsvFormat = CSVFormat.DEFAULT.withDelimiter(csvDelim).withQuote(csvQuote).withCommentMarker(commentMarker);
+        this.writeCsvFormat = CSVFormat.DEFAULT
+                .withDelimiter(csvConfig.getDelim())
+                .withQuote(csvConfig.getQuote())
+                .withCommentMarker(csvConfig.getCommentMarker());
         this.readCsvFormat = writeCsvFormat.withFirstRecordAsHeader();
-        this.csvFormatDetector = new CsvFormatDetector(csvDelim, csvQuote, commentMarker);
+        this.csvFormatDetector = new CsvFormatDetector(csvConfig.getDelim(), csvConfig.getQuote(), csvConfig.getCommentMarker());
     }
 
     private Config.CsvFileConfig getCsvFileConfig(String filename) {
-        return csvConfig.getEnabled() ? csvConfig.get(filename) : null;
+        return csvConfig.isEnabled() ? csvConfig.get(filename) : null;
     }
 
+    @Override
     public FileCompleted replace(FileLocation file, BufferedReader bufferedReader) throws IOException {
         Config.CsvFileConfig csvFileConfig = getCsvFileConfig(file.getFilename());
         if (csvFileConfig != null) {
@@ -158,7 +163,7 @@ public class CsvFileReplacer {
                 String cell = originalRecord.get(i);
                 String replace = guardedColumns.isGuarded(i)
                         ? (Boolean.TRUE.equals(allowed) ? cell : csvSubstitutor.replace(guardedColumns.getTemplate(i)))
-                        : lineReplacer.replace(cell, lineLocation, textMatchedListener);
+                        : lineReplacer.replace(cell, lineLocation);
                 replacedRecord.add(replace);
             }
             replacedRecords.add(replacedRecord);
@@ -177,7 +182,8 @@ public class CsvFileReplacer {
         LineToken joinedLineToken = new JoinedLineToken(joinedWord.toLowerCase(), joinedContext);
         LineLocation joinedLineLocation = new LineLocation(reportedPath, 0);
 
-        Boolean allowed = reportMatcher.getAllowed(joinedLineToken, joinedLineLocation);
+        Report.ReportLine instruction = instructionMatcher.getInstruction(joinedLineToken, joinedLineLocation);
+        Boolean allowed = instruction != null ? instruction.getAllow() : null;
 
         textMatchedListener.onMatched(new TextMatched(joinedLineLocation, joinedLineToken, allowed, joinedReplacement,
                 "CSV Column Template"));

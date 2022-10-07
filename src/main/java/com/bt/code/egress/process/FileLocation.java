@@ -1,5 +1,6 @@
 package com.bt.code.egress.process;
 
+import com.bt.code.egress.file.LocalFiles;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -9,7 +10,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Stream;
 
@@ -46,7 +46,7 @@ public class FileLocation implements AutoCloseable {
 
     public Stream<FileLocation> list() {
         try {
-            Stream<Path> files = Files.list(filePath);
+            Stream<Path> files = LocalFiles.list(filePath);
             if (isInsideZip()) {
                 return files.map(p -> FileLocation
                         .builder()
@@ -75,7 +75,7 @@ public class FileLocation implements AutoCloseable {
             result.setOriginalLocation(other);
             return result;
         } else {
-            throw new IllegalArgumentException ("Invalid usage of FileLocation API : relativize() arguments must be both zip-based or not zip-based");
+            throw new IllegalArgumentException("Invalid usage of FileLocation API : relativize() arguments must be both zip-based or not zip-based");
         }
     }
 
@@ -84,7 +84,7 @@ public class FileLocation implements AutoCloseable {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         if (zipFileSystem != null) {
             try {
                 zipFileSystem.close();
@@ -119,6 +119,7 @@ public class FileLocation implements AutoCloseable {
                 .filePath(rootInsideZip)
                 .build();
     }
+
     public static FileLocation withOtherPathInsideZip(FileLocation location, Path otherPathInsideZip) {
 
         if (!location.isInsideZip()) {
