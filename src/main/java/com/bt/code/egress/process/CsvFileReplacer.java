@@ -5,6 +5,7 @@ import com.bt.code.egress.file.LocalFiles;
 import com.bt.code.egress.read.CsvFormatDetector;
 import com.bt.code.egress.read.InstructionMatcher;
 import com.bt.code.egress.read.LineLocation;
+import com.bt.code.egress.read.LineMatcher;
 import com.bt.code.egress.read.LineToken;
 import com.bt.code.egress.read.WordMatch;
 import com.bt.code.egress.report.Report;
@@ -27,12 +28,14 @@ import java.io.StringWriter;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -43,20 +46,22 @@ public class CsvFileReplacer implements FileReplacer {
     private final ReportHelper reportHelper;
     private final TextMatched.Listener textMatchedListener;
     private final Config.CsvReplacementConfig csvConfig;
+    private final boolean skipTemplateReplacement;
     private final CSVFormat writeCsvFormat;
     private final CSVFormat readCsvFormat;
     private final CsvFormatDetector csvFormatDetector;
-    private final Set<String> templateReplaced = new ConcurrentSkipListSet<>();
+    private final Map<String, String> dictionaryCandidates = new ConcurrentHashMap<>();
 
     public CsvFileReplacer(TextFileReplacer textFileReplacer, LineReplacer lineReplacer, InstructionMatcher instructionMatcher,
                            ReportHelper reportHelper, TextMatched.Listener textMatchedListener,
-                           Config.CsvReplacementConfig csvConfig) {
+                           Config.CsvReplacementConfig csvConfig, boolean skipTemplateReplacement) {
         this.textFileReplacer = textFileReplacer;
         this.lineReplacer = lineReplacer;
         this.instructionMatcher = instructionMatcher;
         this.reportHelper = reportHelper;
         this.textMatchedListener = textMatchedListener;
         this.csvConfig = csvConfig;
+        this.skipTemplateReplacement = skipTemplateReplacement;
         this.writeCsvFormat = CSVFormat.DEFAULT
                 .withDelimiter(csvConfig.getDelim())
                 .withQuote(csvConfig.getQuote())
@@ -110,15 +115,11 @@ public class CsvFileReplacer implements FileReplacer {
         }
 
         boolean isGuarded(int index) {
-            return guarded[index];
+            return index < guarded.length && guarded[index];
         }
 
         String getTemplate(int index) {
             return templates[index];
-        }
-
-        int size() {
-            return guarded.length;
         }
 
         StringSubstitutor getStringSubstitutor(List<String> values) {
@@ -143,12 +144,15 @@ public class CsvFileReplacer implements FileReplacer {
         List<LineReplacer.MatchParam> firstRunMatches = new ArrayList<>();
         CSVParser recordsParser = readCsvFormat.parse(bufferedReader);
         Map<String, Integer> headerMap = recordsParser.getHeaderMap();
-        GuardedColumns guardedColumns = new GuardedColumns(reportedPath, csvFileConfig.getColumns(), headerMap);
+        GuardedColumns dictionaryColumns = new GuardedColumns(reportedPath, csvFileConfig.getDictionary(), headerMap);
+        GuardedColumns templateColumns = new GuardedColumns(reportedPath,
+                skipTemplateReplacement ? Collections.emptyMap() : csvFileConfig.getColumns(), headerMap);
         for (CSVRecord record : recordsParser) {
             originalRecords.add(Lists.newArrayList(record.iterator()));
             LineLocation lineLocation = new LineLocation(reportedPath, (int) record.getRecordNumber());
-            for (int i = 0; i < guardedColumns.size() && i < record.size(); i++) {
-                if (guardedColumns.isGuarded(i)) {
+            for (int i = 0; i < record.size(); i++) {
+//                if (dictionaryColumns.isGuarded(i) || templateColumns.isGuarded(i)) {
+                if (templateColumns.isGuarded(i)) {
                     String cell = record.get(i);
                     firstRunMatches.addAll(lineReplacer.getMatchParams(cell, lineLocation));
                 }
@@ -163,16 +167,26 @@ public class CsvFileReplacer implements FileReplacer {
             lineNum++; // 0 is header
             List<String> replacedRecord = new ArrayList<>(originalRecord.size());
             LineLocation lineLocation = new LineLocation(reportedPath, lineNum);
-            StringSubstitutor csvSubstitutor = guardedColumns.getStringSubstitutor(originalRecord);
-            for (int i = 0; i < guardedColumns.size() && i < originalRecord.size(); i++) {
+            StringSubstitutor templateSubstitutor = templateColumns.getStringSubstitutor(originalRecord);
+            for (int i = 0; i < originalRecord.size(); i++) {
                 String cell = originalRecord.get(i);
-                boolean guarded = guardedColumns.isGuarded(i);
-                if (guarded) {
-                    templateReplaced.add(cell.trim().toLowerCase());
+                String replace;
+                if (templateColumns.isGuarded(i)) {
+                    String mashed = templateSubstitutor.replace(templateColumns.getTemplate(i));
+                    if (Boolean.TRUE.equals(allowed)) {
+                        replace = cell;
+                        if (!cell.equals(mashed)) {
+                            dictionaryCandidates.put(cell.trim().toLowerCase(), "template");
+                        }
+                    } else {
+                        replace = mashed;
+                    }
+                } else {
+                    replace = lineReplacer.replace(cell, lineLocation);
+                    if (dictionaryColumns.isGuarded(i) && cell.equals(replace)) {
+                        dictionaryCandidates.put(cell.trim().toLowerCase(), "dictionary");
+                    }
                 }
-                String replace = guarded
-                        ? (Boolean.TRUE.equals(allowed) ? cell : csvSubstitutor.replace(guardedColumns.getTemplate(i)))
-                        : lineReplacer.replace(cell, lineLocation);
                 replacedRecord.add(replace);
             }
             replacedRecords.add(replacedRecord);
@@ -276,22 +290,39 @@ public class CsvFileReplacer implements FileReplacer {
         }
     }
 
-    public void saveTemplateReplaced(Path templateReplacedPath) {
-        if (templateReplaced.isEmpty()) {
+    public void saveDictionaryCandidates(Path dictionaryCandidatePath, LineMatcher restoreLineMatcher) {
+        if (dictionaryCandidates.isEmpty()) {
             log.info("No template replaced");
             return;
         }
 
-        log.info("Writing generated replacements to {}", templateReplacedPath);
-        try (BufferedWriter writer = LocalFiles.newBufferedWriter(templateReplacedPath)) {
-            try (CSVPrinter printer = new CSVPrinter(writer, CSVFormat.DEFAULT)) {
-                for (String w : templateReplaced) {
-                    printer.printRecord(w);
-                }
+        log.info("Writing generated replacements to {}", dictionaryCandidatePath);
+        CSVFormat format = CSVFormat.DEFAULT.withHeader("Text", "Replacement", "Scope", "Comment");
+        try (BufferedWriter writer = LocalFiles.newBufferedWriter(dictionaryCandidatePath)) {
+            try (CSVPrinter printer = new CSVPrinter(writer, format)) {
+                dictionaryCandidates.entrySet().stream()
+                        .map(entry -> {
+                            String text = entry.getKey();
+                            return new String[]{text, null, entry.getValue(),
+                                    !restoreLineMatcher.getMatches(text).isEmpty() ? "Ignore: restorable"
+                                            : text.length() < 3 ? "Ignore: too short" : null};
+                        })
+                        .sorted(Comparator.comparing((String[] r) -> r[3], Comparator.nullsLast(
+                                        Comparator.<String>comparingInt(s -> Math.min(s.length(), 3))
+                                                .thenComparing(Comparator.naturalOrder())))
+                                .thenComparing((String[] r) -> r[2])
+                                .thenComparing((String[] r) -> r[0]))
+                        .forEach(e -> {
+                            try {
+                                printer.printRecord((String[]) e);
+                            } catch (IOException ex) {
+                                throw new RuntimeException(ex);
+                            }
+                        });
             }
         } catch (IOException e) {
-            throw new RuntimeException("Failed to write CVS TemplateReplaced to " + templateReplacedPath, e);
+            throw new RuntimeException("Failed to write CVS Dictionary Candidate to " + dictionaryCandidatePath, e);
         }
-        Stats.increment("Words CSV TemplateReplaced", templateReplaced.size());
+        Stats.increment("Words CSV Dictionary Candidate", dictionaryCandidates.size());
     }
 }

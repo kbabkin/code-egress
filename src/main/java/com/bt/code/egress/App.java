@@ -120,10 +120,10 @@ public class App implements ApplicationRunner {
             WordReplacementGenerator wordReplacementGenerator = Config.ScanDirection.RESTORE.equals(config.getScan().getScanMode())
                     ? instructionMatcher.getRestoreWordReplacer()
                     : new WordReplacementGenerator(directionConfig.getDefaultTemplate());
+            closeListeners.add(() -> wordReplacementGenerator.saveGenerated(directionConfig.getGeneratedReplacement().toPath()));
             ReportCollector restoreInstructionCollector = Config.ScanDirection.RESTORE.equals(config.getScan().getScanMode())
                     ? null
                     : new ReportCollector(reportHelper);
-            LineReplacer lineReplacer = new LineReplacer(lineMatcher, reportCollector, restoreInstructionCollector, instructionMatcher, wordReplacementGenerator);
             if (restoreInstructionCollector != null) {
                 RestoreReportWriter restoreInstructionLastWriter = new RestoreReportWriter(reportHelper,
                         directionConfig.getRestoreInstructionLast().toPath(), "Last", Collections.emptyList());
@@ -135,17 +135,20 @@ public class App implements ApplicationRunner {
                     restoreInstructionCumulativeWriter.onReport(report);
                 });
             }
-            closeListeners.add(() -> wordReplacementGenerator.saveGenerated(directionConfig.getGeneratedReplacement().toPath()));
-            return lineReplacer;
+            return new LineReplacer(lineMatcher, reportCollector, restoreInstructionCollector, instructionMatcher, wordReplacementGenerator);
         }
 
         public FileReplacer createFileReplacer(LineReplacer lineReplacer, ReportHelper reportHelper,
                                                InstructionMatcher instructionMatcher, ReportCollector reportCollector) {
             TextFileReplacer textFileReplacer = new TextFileReplacer(lineReplacer);
-            //todo for restore csv only non-template
+            boolean isReplace = Config.ScanDirection.REPLACE.equals(config.getScan().getScanMode());
             CsvFileReplacer csvFileReplacer = new CsvFileReplacer(textFileReplacer, lineReplacer,
-                    instructionMatcher, reportHelper, reportCollector, config.getCsv());
-            closeListeners.add(() -> csvFileReplacer.saveTemplateReplaced(config.getCsv().getTemplateReplaced().toPath()));
+                    instructionMatcher, reportHelper, reportCollector, config.getCsv(), !isReplace);
+            if (isReplace) {
+                closeListeners.add(() -> csvFileReplacer.saveDictionaryCandidates(config.getCsv().getDictionaryCandidate().toPath(),
+                        // use restore config to exclude from dictionary candidates
+                        LineGuardIgnoreMatcher.fromConfigs(config.getRestore().getWord(), Collections.emptyMap())));
+            }
             return csvFileReplacer;
         }
 

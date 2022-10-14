@@ -29,5 +29,8 @@ write:
   inplace: false
   folder: ${scan.target}/preview
 
+csv:
+  dictionaryCandidate: ${scan.target}/csv-dictionary-candidate.csv
+
 logging:
   file: ${scan.target}/logs/code-egress.log

@@ -93,13 +93,13 @@ restore:
 
 csv:
   enabled: true
-  templateReplaced: ${scan.target}/csv-template-replaced.csv
   files:
     - filename: "*LegalEntity*.csv"
+      dictionary:
+        "mnemonic": "mn{legalEntityId}"
       columns:
         "name": "n{legalEntityId}"
         "fullName": "fn{legalEntityId}"
-        "mnemonic": "mn{legalEntityId}"
         "cisNumber": "{legalEntityId}"
         "pbgoLegalEntityId": "{legalEntityId}"
         "cportLegalEntityId": "{legalEntityId}"
@@ -108,26 +108,31 @@ csv:
         "crdsLeId": "{legalEntityId}"
         "cftcCpty": "cpt{legalEntityId}"
     - filename: "*EM_User*.csv"
+      dictionary:
+        "userName": "un{userId}"
       columns:
         "lastName": "ln{userId}"
         "firstName": "fn{userId}"
         "userName": "un{userId}"
         "emailAddress": ""
     - filename: "*Institution*.csv"
+      dictionary:
+        "mnemonic": "mn{institutionId}"
       columns:
         "name": "n{institutionId}"
         "fullName": "fn{institutionId}"
-        "mnemonic": "mn{institutionId}"
         "cisNumber": "{institutionId}"
     - filename: "*Book*.csv"
+      dictionary:
+        "mnemonic": "mn{bookId}"
       columns:
         "name": "n{bookId}"
         "fullName": "fn{bookId}"
-        "mnemonic": "mn{bookId}"
         "adpAcctNum": "ac{bookId}"
     - filename: test.csv
+      dictionary:
+        "longName": "ln{id}"
       columns:
         "shortName": "sn{id}"
-        "longName": "ln{id}"
         "email": ""
         "address": "N/A"
