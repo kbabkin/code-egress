@@ -95,6 +95,7 @@ public class Config {
         File restoreInstructionCumulative;
         File restoreInstructionLast;
         File generatedReplacement;
+        File fileError;
     }
 
     public Config.DirectionConfig getDirectionConfig() {

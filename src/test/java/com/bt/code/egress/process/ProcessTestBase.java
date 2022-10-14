@@ -3,6 +3,7 @@ package com.bt.code.egress.process;
 import com.bt.code.egress.App;
 import com.bt.code.egress.Config;
 import com.bt.code.egress.file.LocalFiles;
+import com.bt.code.egress.report.FileErrors;
 import com.bt.code.egress.report.Stats;
 import com.bt.code.egress.write.FolderMock;
 import org.junit.jupiter.api.AfterEach;
@@ -56,11 +57,13 @@ public class ProcessTestBase {
     }
 
     protected void runScan() {
+        FileErrors.reset();
         Stats.reset();
         App.RunnerBuilder runnerBuilder = App.RunnerBuilder.of(config);
         runnerBuilder.submit(JobRunner.DIRECT_RUNNER);
         runnerBuilder.close();
         fileSystem.dump();
+        FileErrors.dump(null);
         Stats.dump();
     }
 

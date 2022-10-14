@@ -5,6 +5,7 @@ import com.bt.code.egress.file.ReaderCharsetSelector;
 import com.bt.code.egress.read.FilePathMatcher;
 import com.bt.code.egress.read.LineLocation;
 import com.bt.code.egress.read.LineToken;
+import com.bt.code.egress.report.FileErrors;
 import com.bt.code.egress.report.Stats;
 import com.bt.code.egress.write.FileCompleted;
 import com.bt.code.egress.write.ZipCompleted;
@@ -49,7 +50,7 @@ public class FolderReplacer {
                     if (filePathMatcher.match(name + "/")) {
                         List<LineReplacer.MatchParam> fileNameMatches = lineReplacer.getMatchParams(relativeFile.getFilename(), lineLocation);
                         for (LineReplacer.MatchParam fileNameMatch : fileNameMatches) {
-                            Stats.addError(reportedPath, "Guarded word: " + fileNameMatch.getWordMatch().getReason());
+                            FileErrors.addError(reportedPath, "Guarded word: " + fileNameMatch.getWordMatch().getReason());
                         }
                         replace(file, rootFolder, submitter);
                     } else {
@@ -73,7 +74,7 @@ public class FolderReplacer {
 
                 List<LineReplacer.MatchParam> fileNameMatches = lineReplacer.getMatchParams(relativeFile.getFilename(), lineLocation);
                 for (LineReplacer.MatchParam fileNameMatch : fileNameMatches) {
-                    Stats.addError(reportedPath, "Guarded word: " + fileNameMatch.getWordMatch().getReason());
+                    FileErrors.addError(reportedPath, "Guarded word: " + fileNameMatch.getWordMatch().getReason());
                 }
 
                 if (isZipFile(file.getFilePath())) {
@@ -91,7 +92,7 @@ public class FolderReplacer {
                             fileCompletedListener.onFileCompleted(fileCompleted);
                         } catch (Exception e) {
                             log.error("Failed to process file {}", relativeFile, e);
-                            Stats.addError(reportedPath, "Failed to process file: " + e);
+                            FileErrors.addError(reportedPath, "Failed to process file: " + e);
                             Stats.fileFailed();
                             textMatchedListener.onMatched(new TextMatched(lineLocation,
                                     new LineToken(""), null, "", "FAILED to process file " + relativeFile));

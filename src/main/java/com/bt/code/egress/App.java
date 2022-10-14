@@ -11,6 +11,7 @@ import com.bt.code.egress.process.WordReplacementGenerator;
 import com.bt.code.egress.read.FilePathMatcher;
 import com.bt.code.egress.read.InstructionMatcher;
 import com.bt.code.egress.read.LineGuardIgnoreMatcher;
+import com.bt.code.egress.report.FileErrors;
 import com.bt.code.egress.report.Report;
 import com.bt.code.egress.report.ReportCollector;
 import com.bt.code.egress.report.ReportHelper;
@@ -28,9 +29,11 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Import;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 
 @SpringBootApplication
@@ -135,6 +138,8 @@ public class App implements ApplicationRunner {
                     restoreInstructionCumulativeWriter.onReport(report);
                 });
             }
+            closeListeners.add(() -> FileErrors.dump(Optional.ofNullable(config.getDirectionConfig().getFileError())
+                    .map(File::toPath).orElse(null)));
             return new LineReplacer(lineMatcher, reportCollector, restoreInstructionCollector, instructionMatcher, wordReplacementGenerator);
         }
 

@@ -19,10 +19,12 @@ replace:
   restoreInstructionCumulative: ${scan.target}/restore-instruction-cumulative.csv
   restoreInstructionLast: ${scan.target}/restore-instruction-last.csv
   generatedReplacement: ${scan.target}/generated-replacement.csv
+  fileError: ${scan.target}/file-error.csv
 
 restore:
   report: ${scan.target}/restore-report.csv
   generatedReplacement: ${scan.target}/restore-generated-replacement.csv
+  fileError: ${scan.target}/restore-file-error.csv
 
 write:
   # Default is Review phase (false). After review is completed, to Cleanup Code add JVM parameter -Dwrite.inplace=true

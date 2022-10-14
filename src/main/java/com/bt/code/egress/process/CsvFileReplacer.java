@@ -8,6 +8,7 @@ import com.bt.code.egress.read.LineLocation;
 import com.bt.code.egress.read.LineMatcher;
 import com.bt.code.egress.read.LineToken;
 import com.bt.code.egress.read.WordMatch;
+import com.bt.code.egress.report.FileErrors;
 import com.bt.code.egress.report.Report;
 import com.bt.code.egress.report.ReportHelper;
 import com.bt.code.egress.report.Stats;
@@ -110,7 +111,7 @@ public class CsvFileReplacer implements FileReplacer {
                     .filter(n -> !headerMap.containsKey(n))
                     .collect(Collectors.toSet());
             if (!missingColumns.isEmpty()) {
-                Stats.addError(file, "Missing CSV columns: " + missingColumns);
+                FileErrors.addError(file, "Missing CSV columns: " + missingColumns);
             }
         }
 
@@ -127,7 +128,7 @@ public class CsvFileReplacer implements FileReplacer {
                     .map(mapping::get)
                     .map(values::get)
                     .orElseGet(() -> {
-                        Stats.addError(file, "Missing CSV columns: " + name);
+                        FileErrors.addError(file, "Missing CSV columns: " + name);
                         return "_UNRESOLVED_" + name + "_";
                     }),
                     "{", "}", '$');
