@@ -2,6 +2,47 @@ read:
   # !!! Project folder to be scanned - provide actual value !!!
   folder: "/work/project/scanned-sample"
 
+copy:
+  privateSource:
+    dir: ${read.folder}
+    mode: FILES
+    #Usually 'prefix' is main branch name, but always in uppercase, e.g. DEVELOP for develop branch, MAIN for main branch
+    branchPrefix: DEV_INT
+    egress:
+      date: 2022-10-21
+      main: DEV_INT
+      tag: btech/${copy.privateSource.branchPrefix}_EGRESS_START_${copy.privateSource.egress.date}
+      branch: btech/${copy.privateSource.branchPrefix}_EGRESS_${copy.privateSource.egress.date}
+      staging:
+         name: btech/${copy.privateSource.branchPrefix}_EGRESS
+         tag: EGRESS-LATEST
+    ingress:
+      date: 2022-10-23
+      branch: btech/${copy.privateSource.branchPrefix}_INGRESS_${copy.privateSource.ingress.date}
+
+  publicSource:
+    # !!! Folder for public changes - provide actual value !!!
+    dir: "/work/project/public-sample"
+    mode: FILES
+    egress:
+      date: 2022-10-21
+      branch: btech/EGRESS_${copy.public.egress.date}
+    ingress:
+      date: 2022-10-22
+      tag: btech/INGRESS_${copy.public.ingress.date}
+
+  file:
+    guard:
+      # file folder (ending with '/') and file name patterns to include in copy/cleanup
+      # wildcards: https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/util/AntPathMatcher.html
+      values:
+        - "**/*/"
+        - "**/*"
+      valueFiles: [ ]
+    ignore:
+      # file folder and file name patterns to exclude from copy/cleanup
+      values: [ "**/.git/", "**/.github/", "**/.devcontainer/" ]
+
 replace:
   file:
     guard:

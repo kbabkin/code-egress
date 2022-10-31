@@ -45,6 +45,7 @@ public class Config {
     DirectionConfig replace = new DirectionConfig();
     DirectionConfig restore = new DirectionConfig();
     CsvReplacementConfig csv = new CsvReplacementConfig();
+    CopyChangesConfig copy = new CopyChangesConfig();
 
     public enum ScanDirection {
         REPLACE,
@@ -231,5 +232,42 @@ public class Config {
         public CsvFileConfig get(String filename) {
             return files.stream().filter(f -> f.matches(filename)).findFirst().orElse(null);
         }
+    }
+
+    @Data
+    public static class CopyChangesConfig {
+        SourceConfig privateSource;
+        SourceConfig publicSource;
+        MatchingSets file = new Config.MatchingSets();
+    }
+
+    @Data
+    public static class SourceConfig {
+        String dir;
+        CopyMode mode;
+        String branchPrefix;
+        String tag;
+        BranchTagConfig egress;
+        BranchTagConfig ingress;
+    }
+
+    @Data
+    public static class BranchTagConfig {
+        String date;
+        String tag;
+        String main;
+        String branch;
+        TaggedBranch staging;
+        String startTag;
+    }
+
+    @Data
+    public static class TaggedBranch {
+        String name;
+        String tag;
+    }
+
+    public enum CopyMode {
+        GIT, FILES
     }
 }

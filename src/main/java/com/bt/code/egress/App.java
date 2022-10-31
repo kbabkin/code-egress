@@ -17,6 +17,7 @@ import com.bt.code.egress.report.ReportHelper;
 import com.bt.code.egress.report.ReportWriter;
 import com.bt.code.egress.report.RestoreReportWriter;
 import com.bt.code.egress.report.Stats;
+import com.bt.code.egress.sync.CopyXgressChangesService;
 import com.bt.code.egress.write.EmptyFolderWriter;
 import com.bt.code.egress.write.FolderWriter;
 import lombok.RequiredArgsConstructor;
@@ -33,20 +34,76 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.BiConsumer;
 
+import static com.bt.code.egress.Config.ScanDirection;
+import static com.google.common.base.Preconditions.checkArgument;
+
 @SpringBootApplication
 @Import(Config.class)
 @Slf4j
 public class App implements ApplicationRunner {
+
+    public enum RunMode {
+        DEFAULT, MASK_PREVIEW, MASK, UNMASK_PREVIEW, UNMASK,
+        COPY_PRIVATE_CHANGES, COPY_PUBLIC_CHANGES,
+        COMPLETE_PRIVATE_CHANGES
+    }
+
+    public static String MODE_PARAM = "mode";
+
     public static void main(String[] args) {
         SpringApplication.run(App.class, args);
     }
 
-
     @Autowired
     Config config;
 
+    @Autowired
+    CopyXgressChangesService copyXgressChangesService;
+
     @Override
     public void run(ApplicationArguments args) {
+
+        RunMode runMode = RunMode.DEFAULT;
+        if (args.containsOption(MODE_PARAM)) {
+            String runModeString = getOptionSingleValue(args, MODE_PARAM);
+            runMode = RunMode.valueOf(runModeString);
+        } else {
+            usage();
+        }
+        log.info("Running utility in mode: {}", runMode);
+
+        switch (runMode) {
+            case DEFAULT:
+                runScan(args, config.getWrite().isInplace(), config.getScan().getScanMode());
+                break;
+            case MASK_PREVIEW:
+                runScan(args, false, ScanDirection.REPLACE);
+                break;
+            case MASK:
+                runScan(args, true, ScanDirection.REPLACE);
+                break;
+            case UNMASK_PREVIEW:
+                runScan(args, true, ScanDirection.RESTORE);
+                break;
+            case UNMASK:
+                runScan(args, false, ScanDirection.RESTORE);
+                break;
+            case COPY_PRIVATE_CHANGES:
+                copyXgressChangesService.copyPrivateChanges(config.getCopy());
+                break;
+            case COPY_PUBLIC_CHANGES:
+                copyXgressChangesService.copyPublicChanges(config.getCopy());
+                break;
+            case COMPLETE_PRIVATE_CHANGES:
+                copyXgressChangesService.completePrivateChanges(config.getCopy().getPrivateSource());
+                break;
+        }
+    }
+
+    public void runScan(ApplicationArguments args, boolean writeInplace, ScanDirection scanDirection) {
+        config.getWrite().setInplace(writeInplace);
+        config.getScan().setDirection(scanDirection.toString());
+
         Config.ScanConfig scanConfig = config.getScan();
         log.info("Scan mode: {}, project: {}, config: {}", scanConfig.getScanMode(), scanConfig.getProject(), scanConfig.getConfig());
         log.info("Scanning folder: {}, write inplace: {}", config.getRead().getFolder(), config.getWrite().isInplace());
@@ -164,5 +221,20 @@ public class App implements ApplicationRunner {
                     instructionMatcher.getAllowFilePathMatcher(), lineReplacer, reportCollector,
                     folderWriter, folderWriter);
         }
+    }
+
+    private String getOptionSingleValue(ApplicationArguments args, String name) {
+        List<String> values = args.getOptionValues(name);
+        checkArgument(values.size() == 1, "Required single value of %s option", name);
+        return values.get(0);
+    }
+
+    private static void usage() {
+        log.info("Possible modes: ");
+        log.info("--mode=DEFAULT\t\t (same as '--mode' not specified)");
+        log.info("--mode=MASK_PREVIEW\t\tRun obfuscation and save changed files to target/preview folder");
+        log.info("--mode=MASK\t\tRun obfuscation and save changed files in read folder (i.e. force write.inplace=true)");
+        log.info("--mode=UNMASK_PREVIEW\t\tRun de-obfuscation and save changed files to target/preview folder");
+        log.info("--mode=UNMASK\t\tRun de-obfuscation and save changed files in read folder (i.e. force write.inplace=true)");
     }
 }
