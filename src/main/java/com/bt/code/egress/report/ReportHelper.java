@@ -18,11 +18,15 @@ import java.io.Reader;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 @RequiredArgsConstructor
 @Slf4j
 public class ReportHelper {
+    public static final Comparator<Boolean> ALLOW_COMPARATOR = Comparator.nullsLast(Comparator.comparing(b -> b ? 1 : 0));
+    public static final Comparator<String> CONTEXT_COMPARATOR = Comparator.nullsLast(Comparator.comparingInt(String::length).reversed());
+
     enum Headers {
         Allow,
         Text,

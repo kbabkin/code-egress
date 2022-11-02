@@ -37,15 +37,12 @@ public class RestoreReportWriter extends ReportWriter {
     public void onReport(Report report) {
         List<Report.ReportLine> lastReportLines = new ArrayList<>(report.getReportLines());
 
-        Comparator<Report.ReportLine> comparator = Comparator.comparing(Report.ReportLine::getAllow,
-                        Comparator.nullsLast(Comparator.comparing(b -> b ? 1 : 0)))
-                .thenComparing(Report.ReportLine::getComment,
-                        Comparator.nullsLast(Comparator.comparing(String::length).reversed()));
-
-        Map<RestoreLineKey, Report.ReportLine> reportLineMap = Streams.concat(
-                        lastReportLines.stream(), filterPrevInstructions(lastReportLines))
+        Stream<Report.ReportLine> lineStream = Streams.concat(
+                lastReportLines.stream(), filterPrevInstructions(lastReportLines));
+        Map<RestoreLineKey, Report.ReportLine> reportLineMap = lineStream
                 .collect(Collectors.toMap(RestoreLineKey::fromReportLine, Function.identity(),
-                        BinaryOperator.minBy(comparator)));
+                        BinaryOperator.minBy(Comparator.comparing(Report.ReportLine::getAllow, ReportHelper.ALLOW_COMPARATOR)
+                                .thenComparing(Report.ReportLine::getComment, ReportHelper.CONTEXT_COMPARATOR))));
         List<Report.ReportLine> reportLines = new ArrayList<>(reportLineMap.values());
 
         sortAndWrite(reportLines);

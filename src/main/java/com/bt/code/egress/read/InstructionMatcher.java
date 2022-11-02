@@ -30,15 +30,15 @@ public class InstructionMatcher {
         Map<String, List<Report.ReportLine>> rowsByWord = instructionFiles.stream()
                 .map(file -> reportHelper.read(file.toPath()))
                 .flatMap(Collection::stream)
-//                .filter(r -> Objects.nonNull(r.getAllow()))
                 .map(rl -> new Report.ReportLine(rl.getAllow(), rl.getText().toLowerCase(), rl.getContext().toLowerCase(),
                         rl.getFile(), rl.getLine(), rl.getReplacement(), rl.getComment()))
                 .distinct()
                 .collect(Collectors.groupingBy(Report.ReportLine::getText));
+
         // longer context has higher priority
-        Comparator<String> longerFirst = Comparator.nullsLast(Comparator.comparingInt(String::length).reversed());
-        rowsByWord.values().forEach(list -> list.sort(Comparator.comparing(Report.ReportLine::getContext, longerFirst)
-                .thenComparing(Report.ReportLine::getFile, longerFirst)));
+        rowsByWord.values().forEach(list -> list.sort(Comparator.comparing(Report.ReportLine::getContext, ReportHelper.CONTEXT_COMPARATOR)
+                .thenComparing(Report.ReportLine::getFile, ReportHelper.CONTEXT_COMPARATOR)
+                .thenComparing(Report.ReportLine::getAllow, ReportHelper.ALLOW_COMPARATOR)));
 
         Map<String, Set<String>> replacementsByWord = instructionFiles.stream()
                 .map(file -> reportHelper.read(file.toPath()))

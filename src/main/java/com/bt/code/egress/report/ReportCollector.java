@@ -18,7 +18,7 @@ public class ReportCollector implements TextMatched.Listener {
                 textMatched.getAllowed(),
                 textMatched.getLineToken().getWordLowerCase(),
                 textMatched.getContext(),
-                textMatched.getLineLocation().getFile(),
+                textMatched.getLineLocation().getFile() == null ? null : textMatched.getLineLocation().getFile().replaceAll("\\\\", "/"),
                 textMatched.getLineLocation().getLineNum(),
                 textMatched.getReplacement(),
                 textMatched.getComment()

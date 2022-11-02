@@ -10,8 +10,9 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * Find whole words in line.
- * Optimization: tokenize line into whole words, lookup them in hash map.
+ * Find word in configured set.
+ * Used to match line tokenized into whole words, or to match ignored words.
+ * Optimization: lookup in hash map whole words from tokenized line.
  */
 @RequiredArgsConstructor
 public class BasicWordMatcher implements WordMatcher {
