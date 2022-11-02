@@ -93,7 +93,7 @@ public class App implements ApplicationRunner {
             LineReplacer lineReplacer = createLineReplacer(reportHelper, instructionMatcher, reportCollector);
             FileReplacer fileReplacer = createFileReplacer(lineReplacer, reportHelper, instructionMatcher, reportCollector);
             FolderWriter folderWriter = createFolderWriter();
-            folderReplacer = createFolderReplacer(fileReplacer, lineReplacer, instructionMatcher, reportCollector, folderWriter);
+            folderReplacer = createFolderReplacer(fileReplacer, lineReplacer, reportHelper, instructionMatcher, reportCollector, folderWriter);
             return this;
         }
 
@@ -107,7 +107,7 @@ public class App implements ApplicationRunner {
         }
 
         public ReportCollector createReportCollector(ReportHelper reportHelper) {
-            ReportCollector reportCollector = new ReportCollector(reportHelper);
+            ReportCollector reportCollector = new ReportCollector();
             ReportWriter reportWriter = new ReportWriter(reportHelper, config.getDirectionConfig().getReport().toPath());
             closeListeners.add(() -> reportWriter.onReport(reportCollector.toReport()));
             return reportCollector;
@@ -126,7 +126,7 @@ public class App implements ApplicationRunner {
             closeListeners.add(() -> wordReplacementGenerator.saveGenerated(directionConfig.getGeneratedReplacement().toPath()));
             ReportCollector restoreInstructionCollector = Config.ScanDirection.RESTORE.equals(config.getScan().getScanMode())
                     ? null
-                    : new ReportCollector(reportHelper);
+                    : new ReportCollector();
             if (restoreInstructionCollector != null) {
                 RestoreReportWriter restoreInstructionLastWriter = new RestoreReportWriter(reportHelper,
                         directionConfig.getRestoreInstructionLast().toPath(), "Last", Collections.emptyList());
@@ -145,7 +145,7 @@ public class App implements ApplicationRunner {
 
         public FileReplacer createFileReplacer(LineReplacer lineReplacer, ReportHelper reportHelper,
                                                InstructionMatcher instructionMatcher, ReportCollector reportCollector) {
-            TextFileReplacer textFileReplacer = new TextFileReplacer(lineReplacer);
+            TextFileReplacer textFileReplacer = new TextFileReplacer(lineReplacer, reportHelper.getContextGenerator());
             boolean isReplace = Config.ScanDirection.REPLACE.equals(config.getScan().getScanMode());
             CsvFileReplacer csvFileReplacer = new CsvFileReplacer(textFileReplacer, lineReplacer,
                     instructionMatcher, reportHelper, reportCollector, config.getCsv(), !isReplace);
@@ -166,13 +166,13 @@ public class App implements ApplicationRunner {
             return folderWriter;
         }
 
-        public FolderReplacer createFolderReplacer(FileReplacer fileReplacer,
-                                                   LineReplacer lineReplacer, InstructionMatcher instructionMatcher,
+        public FolderReplacer createFolderReplacer(FileReplacer fileReplacer, LineReplacer lineReplacer,
+                                                   ReportHelper reportHelper, InstructionMatcher instructionMatcher,
                                                    ReportCollector reportCollector, FolderWriter folderWriter) {
             FilePathMatcher filePathMatcher = FilePathMatcher.fromConfig(config.getDirectionConfig().getFile());
             return new FolderReplacer(fileReplacer, filePathMatcher,
-                    instructionMatcher.getAllowFilePathMatcher(), lineReplacer, reportCollector,
-                    folderWriter, folderWriter);
+                    instructionMatcher.getAllowFilePathMatcher(), lineReplacer, reportHelper.getContextGenerator(),
+                    reportCollector, folderWriter, folderWriter);
         }
     }
 }

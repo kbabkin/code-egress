@@ -16,6 +16,7 @@ import java.util.List;
 @Slf4j
 public class TextFileReplacer implements FileReplacer {
     private final LineReplacer lineReplacer;
+    private final ContextGenerator contextGenerator;
 
     @Override
     public FileCompleted replace(FileLocation file, BufferedReader bufferedReader) throws IOException {
@@ -26,7 +27,7 @@ public class TextFileReplacer implements FileReplacer {
         List<String> replacedLines = new ArrayList<>();
         for (Iterator<String> i = KeepEolFiles.read(bufferedReader).iterator(); i.hasNext(); ) {
             String line = i.next();
-            String replace = lineReplacer.replace(line, new LineLocation(file.toReportedPath(), ++lineNum));
+            String replace = lineReplacer.replace(line, new LineLocation(file.toReportedPath(), ++lineNum), contextGenerator);
             originalLines.add(line);
             replacedLines.add(replace);
         }

@@ -1,17 +1,14 @@
 package com.bt.code.egress.report;
 
 import com.bt.code.egress.process.TextMatched;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-@RequiredArgsConstructor
 @Slf4j
 public class ReportCollector implements TextMatched.Listener {
-    private final ReportHelper reportHelper;
     private final Collection<Report.ReportLine> reportLines = new ConcurrentLinkedQueue<>();
 
     @Override
@@ -20,7 +17,7 @@ public class ReportCollector implements TextMatched.Listener {
         reportLines.add(new Report.ReportLine(
                 textMatched.getAllowed(),
                 textMatched.getLineToken().getWordLowerCase(),
-                textMatched.getLineToken().getContext(reportHelper),
+                textMatched.getContext(),
                 textMatched.getLineLocation().getFile(),
                 textMatched.getLineLocation().getLineNum(),
                 textMatched.getReplacement(),

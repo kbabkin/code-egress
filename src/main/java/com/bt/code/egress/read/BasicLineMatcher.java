@@ -11,6 +11,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+/**
+ * Find non-whole words, e.g. with spaces, in line.
+ * Optimization: group words by prefix, lookup prefix first.
+ */
 public class BasicLineMatcher implements LineMatcher {
     private final Map<String, Map<String, Map<String, Map<String, String>>>> valuesBy3Prefixes;
     private final Map<Pattern, String> patterns;

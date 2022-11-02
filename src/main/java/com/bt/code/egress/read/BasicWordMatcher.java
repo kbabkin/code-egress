@@ -9,6 +9,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+/**
+ * Find whole words in line.
+ * Optimization: tokenize line into whole words, lookup them in hash map.
+ */
 @RequiredArgsConstructor
 public class BasicWordMatcher implements WordMatcher {
     private final Map<String, String> values;

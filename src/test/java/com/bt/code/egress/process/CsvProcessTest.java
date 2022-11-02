@@ -99,9 +99,9 @@ public class CsvProcessTest extends ProcessTestBase {
                 "40,n40,-,Name new guarded; Mnemonic new short"));
         ImmutableList<String> dictionaryCandidates = ImmutableList.of(
                 "Text,Replacement,Scope,Comment",
+                "\"-\",,dictionary,Ignore: too short",
                 "w12345,,dictionary,Ignore: restorable",
-                "w12345_alt,,dictionary,Ignore: restorable",
-                "\"-\",,dictionary,Ignore: too short");
+                "w12345_alt,,dictionary,Ignore: restorable");
         assertThat(fileSystem.readAllLines(config.getCsv().getDictionaryCandidate().toPath())).isEqualTo(dictionaryCandidates);
 
         // restore

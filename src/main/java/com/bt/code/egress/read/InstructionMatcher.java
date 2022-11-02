@@ -51,9 +51,8 @@ public class InstructionMatcher {
     }
 
 
-    public Report.ReportLine getInstruction(LineToken lineToken, LineLocation lineLocation) {
+    public Report.ReportLine getInstruction(LineLocation lineLocation, LineToken lineToken, String wordContext) {
         String word = lineToken.getWordLowerCase();
-        String wordContext = lineToken.getContext(reportHelper);
         List<Report.ReportLine> reportLines = rowsByText.get(word);
         if (reportLines == null || reportLines.isEmpty()) {
             return null;
