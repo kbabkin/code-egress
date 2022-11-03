@@ -5,7 +5,7 @@ spring:
 scan:
   # sample value, should be overridden in Spring command line properties, e.g. -Dscan.project=/work/project/scan-sample
   project: scan-project/sample
-  # "replace" - obfuscate, "restore" - de-obfuscate, e.g. -Dscan.direction=restore
+  # "replace" - mask, "restore" - unmask, e.g. -Dscan.direction=restore
   direction: replace
   config: "${scan.project}/config"
   target: ${scan.project}/target
