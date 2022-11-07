@@ -26,6 +26,7 @@ git pull
 
 ${RUNTOOL} COPY_PRIVATE_CHANGES
 cd ${GITHUB_PROJECT}
-git commit -m "Transfer of masked changes to github for egress ${EGRESS_PREPARE_DATE} as of date ${EGRESS_TRANSFER_DATE}"
+echo "Transfer of masked changes to github for egress ${EGRESS_PREPARE_DATE} as of date ${EGRESS_TRANSFER_DATE}" > tmp_commit_msg.txt
+git commit -F tmp_commit_msg.txt
 
 read -p "Please create Pull Request ${GITHUB_EGRESS_TMP}  -- > ${GITHUB_EGRESS_STAGING}, approve and merge "

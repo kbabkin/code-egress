@@ -1,13 +1,13 @@
 #!/bin/bash
 
 export script_dir="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-. ${script_dir}/setenv.sh
+. ${script_dir}/xgress-setenv.sh
 
 #Big blocks are factored out to functions
 
 # =================================================
 function dropBranch {
-BRANCH=$1
+ BRANCH=$1
 
  git push -d origin ${BRANCH}
  git branch -D ${BRANCH}
@@ -15,10 +15,10 @@ BRANCH=$1
 
 # =================================================
 function dropTag {
-TAG=$1
+ TAG=$1
 
-git tag -d $TAG
-git push --delete origin $TAG
+ git tag -d $TAG
+ git push --delete origin $TAG
 }
 
 # =================================================
@@ -32,22 +32,17 @@ git push --delete origin $TAG
  git fetch
 
  git checkout ${BITBUCKET_MAIN}
+ git pull
+ #Get rid of any local changes:
+ git reset --hard HEAD
 
  dropBranch ${BITBUCKET_EGRESS_TMP}
  dropBranch ${BITBUCKET_EGRESS_STAGING}
  dropTag ${BITBUCKET_EGRESS_START_TAG}
 
-#TODO clarify with Slava
  cd ${SCAN_PROJECT}
 
-# ??? rmdir ${SCAN_PROJECT}/../${EGRESS_PREPARE_DATE} ???
-#Option 1
-# git add -A *
-# git commit -m "Scan project config for Egress as of ${TIMESTAMP} for ${EGRESS_PREPARE_DATE}"
-# git push
-
-#Option 2
-# mkdir ${SCAN_PROJECT}/../${EGRESS_PREPARE_DATE}
-# cp -r ${SCAN_PROJECT} ${SCAN_PROJECT}/../${EGRESS_PREPARE_DATE}
+# TODO how do we rollback Scan Project changes if any?
+ read -p "Please rollback Scan Project:  ${SCAN_PROJECT} and press Enter."
 
 echo Rollback completed.

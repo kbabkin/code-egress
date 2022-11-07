@@ -268,6 +268,6 @@ public class Config {
     }
 
     public enum CopyMode {
-        GIT, FILES
+        GIT, FILES, FILTERED_FILES
     }
 }

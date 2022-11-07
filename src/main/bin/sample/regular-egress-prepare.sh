@@ -26,7 +26,8 @@ function prepareEgressWhenConfigChanged() {
  ${RUNTOOL} MASK
  read -p "Press Enter to commit masking result"
 
- git commit -m "Masked changes for egress ${EGRESS_PREPARE_DATE}"
+ echo "Masked changes for egress ${EGRESS_PREPARE_DATE}" > tmp_commit_msg.txt
+ git commit -F tmp_commit_msg.txt
 
  git merge -s ours origin/${BITBUCKET_EGRESS_STAGING}
  read -p "Please check that there are no conflicts after the above merge. In case of conflicts, use your IDE to resolve. Press Enter to proceed when resolved. "
@@ -63,7 +64,8 @@ function prepareEgressWhenConfigChanged() {
  ${RUNTOOL} MASK
  read -p "Press Enter to commit masking result"
 
- git commit -m "Masked changes for egress ${EGRESS_PREPARE_DATE}"
+ echo "Masked changes for egress ${EGRESS_PREPARE_DATE}" > tmp_commit_msg.txt
+ git commit -F tmp_commit_msg.txt
 
 #backup
  cp ${SCAN_PROJECT_CONFIG}/restore-instruction.csv ${SCAN_PROJECT_CONFIG}/restore-instruction.csv.bak.${TIMESTAMP}
@@ -97,13 +99,5 @@ fi
 
 #TODO clarify with Slava
  cd ${SCAN_PROJECT}
-
-#Option 1
-# git commit -m "Scan project config for Egress as of ${TIMESTAMP}"
-# git push
-
-#Option 2
-# mkdir ${SCAN_PROJECT}-egress-${TIMESTAMP}
-# cp -r ${SCAN_PROJECT} ${SCAN_PROJECT}-egress-${TIMESTAMP}
 
  read -p "Please create Pull Request ${BITBUCKET_TMP}  -- > ${BITBUCKET_STAGING}, approve and merge "

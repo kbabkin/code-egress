@@ -5,9 +5,11 @@ import com.bt.code.egress.file.FileWalker;
 import com.bt.code.egress.file.LocalFiles;
 import com.bt.code.egress.util.ConfirmationUtil;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -39,10 +41,12 @@ public class CopyXgressChangesService {
         String source = copyChangesConfig.getPrivateSource().getDir();
         String target = copyChangesConfig.getPublicSource().getDir();
         xgressSourceService.checkDirectory(source, "source private repo");
-        xgressSourceService.checkDirectory(target, "target private repo");
+        xgressSourceService.checkDirectory(target, "target public repo");
 
+        String sourceStagingBranch = copyChangesConfig.getPrivateSource().getEgress().getStaging().getName();
+        String sourceStagingTag = copyChangesConfig.getPrivateSource().getEgress().getStaging().getTag();
         xgressSourceService.checkBranchCheckout(source,
-                copyChangesConfig.getPrivateSource().getEgress().getStaging().getName());
+                sourceStagingBranch);
         xgressSourceService.checkBranchCheckout(target,
                 copyChangesConfig.getPublicSource().getEgress().getBranch());
 
@@ -50,10 +54,16 @@ public class CopyXgressChangesService {
             case FILES:
                 copyFolder(source, target, copyChangesConfig.getFile());
                 break;
+            case FILTERED_FILES:
+                List<String> affectedFiles = xgressSourceService.getXgressAffectedFiles(source, sourceStagingBranch, sourceStagingTag);
+                Config.MatchingSets defaultFilter = copyChangesConfig.getFile();
+                copyFolder(source, target, defaultFilter, createAffectedFilesFilter(affectedFiles));
+                break;
             case GIT:
                 //TODO clarify
+                throw new UnsupportedOperationException("GIT mode not supported");
                 //copyGitChanges(source, target, copyChangesConfig.getPrivateSource().getEgress().getStaging().getName());
-                break;
+                //break;
         }
     }
 
@@ -64,7 +74,7 @@ public class CopyXgressChangesService {
         String source = copyChangesConfig.getPublicSource().getDir();
         String target = copyChangesConfig.getPrivateSource().getDir();
         xgressSourceService.checkDirectory(source, "source public repo");
-        xgressSourceService.checkDirectory(target, "target public repo");
+        xgressSourceService.checkDirectory(target, "target private repo");
 
         xgressSourceService.checkTagCheckout(source,
                 copyChangesConfig.getPublicSource().getIngress().getTag(),
@@ -85,21 +95,22 @@ public class CopyXgressChangesService {
 
 
     @SneakyThrows
-    private void copyFolder(String source, String target, Config.MatchingSets filter) {
+    private void copyFolder(String source, String target, Config.MatchingSets... filters) {
 
-        log.info("Copying folder contents: {} to {} with filter: {}", source, target, filter);
+        log.info("Copying folder contents: {} to {} with filters: {}",
+                source, target, ArrayUtils.toString(filters));
 
-        boolean completed = cleanupTargetDir(target, filter);
+        boolean completed = cleanupTargetDir(target, filters);
         if (!completed) {
             return;
         }
 
-        copyToTargetDir(source, target, filter);
+        copyToTargetDir(source, target, filters);
         log.info("Completed copying folder contents: {} to {}.", source, target);
     }
 
     @SneakyThrows
-    private boolean cleanupTargetDir(String target, Config.MatchingSets filter) {
+    private boolean cleanupTargetDir(String target, Config.MatchingSets... filters) {
         log.info("Starting cleanup of {}", target);
 
         List<Path> filesToDelete = Lists.newArrayList();
@@ -107,7 +118,7 @@ public class CopyXgressChangesService {
 
         //cleanup target, excluding excludes
         Path targetPath = Paths.get(target);
-        FileWalker.walkFileTreeWithFilter(targetPath, filter,
+        FileWalker.walkFileTreeWithFilters(targetPath, filters,
                 (Path dirPath) -> {
                     dirsToDelete.add(dirPath);
                 },
@@ -143,12 +154,12 @@ public class CopyXgressChangesService {
     }
 
     @SneakyThrows
-    private void copyToTargetDir(String source, String target, Config.MatchingSets filter) {
+    private void copyToTargetDir(String source, String target, Config.MatchingSets... filters) {
         //copy from source to target, excluding items per configuration
         Path sourcePath = Paths.get(source);
         Path targetPath = Paths.get(target);
 
-        FileWalker.walkFileTreeWithFilter(sourcePath, filter, (Path path) -> {},
+        FileWalker.walkFileTreeWithFilters(sourcePath, filters, (Path path) -> {},
                 (Path path) -> {
                     Path relativePath = path.relativize(sourcePath);
                     Path pathInTarget = targetPath.resolve(relativePath);
@@ -256,6 +267,14 @@ public class CopyXgressChangesService {
             }
             return size;
         }).sum();
+    }
+
+    private Config.MatchingSets createAffectedFilesFilter(List<String> affectedFiles) {
+        Config.MatchingSets result = new Config.MatchingSets();
+        Config.MatchingSet guard = new Config.MatchingSet();
+        guard.setValues(Sets.newHashSet(affectedFiles));
+        result.setGuard(guard);
+        return result;
     }
 }
 

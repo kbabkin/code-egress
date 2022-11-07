@@ -51,12 +51,11 @@ if [[ -z "$1" ]]; then
        echo "Press enter to start, Ctrl-C to abort"
        read
 
-       echo java $JAVA_OPTS -jar "${SCAN_TOOL_JAR}" --mode=$opt
        java $JAVA_OPTS -jar "${SCAN_TOOL_JAR}" --mode=$opt
     done
 else
-    echo java $JAVA_OPTS -jar "${SCAN_TOOL_JAR}" --mode=$1
-    java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 $JAVA_OPTS -jar "${SCAN_TOOL_JAR}" --mode=$1
+    java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 \
+     $JAVA_OPTS -jar "${SCAN_TOOL_JAR}" --mode=$1
 fi
 
 

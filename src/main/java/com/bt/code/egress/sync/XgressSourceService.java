@@ -84,6 +84,11 @@ public class XgressSourceService {
                 comment, dir);
     }
 
+    @SneakyThrows
+    public List<String> getXgressAffectedFiles(String source, String branch, String latestTag) {
+        List<ChangeAction> changes = getXgressChanges(source, branch, latestTag);
+        return changes.stream().map(ChangeAction::getPath).collect(Collectors.toList());
+    }
 
     @SneakyThrows
     public List<ChangeAction> getXgressChanges(String source, String branch, String latestTag) {
