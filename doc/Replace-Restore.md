@@ -3,7 +3,7 @@
 Replace (Mask) confidential details in code
 in internal repository before publishing it to external repository.
 Restore (Unmask) changes done in external repository for use in internal repository.
-Sequence of multiple Replace (Mask) and/or Restore (Unmask) operations produces 
+Sequence of multiple Replace (Mask) and/or Restore (Unmask) operations produces
 reasonably consistent results.
 
 Replace/Restore input configuration and output reports heavily use CSV format.
@@ -12,7 +12,7 @@ Replace/Restore input configuration and output reports heavily use CSV format.
 
 - [Features](#features)
 - [High Level Process](#high-level-process)
-- [Report File](#report-file)
+- [Report / Instruction File](#report--instruction-file)
 - [Configuration](#configuration)
 - [Run](#run)
 - [File Processing](#file-processing)
@@ -24,31 +24,55 @@ Replace/Restore input configuration and output reports heavily use CSV format.
 # Features
 
 - Replace (Mask)
-  - Repeated Replace (Mask) produces same result
-  - Match file path with wildcards
-  - Exact word match, Java regexp match
-  - Fill CSV file columns by template
-  - Process ZIP archives
+    - Repeated Replace (Mask) produces same result
+    - Match file path with wildcards
+    - Exact word match, Java regexp match
+    - Fill CSV file columns by template
+    - Process ZIP archives
 - Restore (Unmask) relies on report of Replace (Mask)
 - Identify false-positives in Instruction file
 - Report matches and changes
 
 # High Level Process
 
+Replace (Mask) operation can be optionally followed by Restore (Unmask) operation
+to integrate changes done over masked code.
+
 ## Replace (Mask)
 
 - Collect dictionary of guarded words to ``word-guard-value.csv``.
-- Scan code to produce report file ``replace-report.csv`` and replaced files content in ``preview`` folder.
-- Review report file to fix configurations and mark false-positives.
-  Copy report file lines with filled **Allow** column to ``restore-instruction-lines.csv`` for particular false-positives,
-  or to ``restore-instruction.csv`` for common false-positives with wider context and file path matching.
-- file-error.csv
-- Repeat scan and review steps as needed.
-- Cleanup Code according to collected configuration. Add JVM parameter ``-Dwrite.inplace=true``
+- Run scan (direction - replace, mode - preview).
+  Review produced report files and replaced files content in ``preview`` folder.
+  Repeat scan and review steps as needed.
+    - Review report file ``replace-report.csv`` to fix configurations and mark false-positives.
+      Copy report file lines with filled **Allow** column to ``replace-instruction-lines.csv`` for particular
+      false-positives,
+      or to ``replace-instruction.csv`` for common false-positives with wider context and file path matching.
+      All report lines should be marked as true-positive or false-positive to complete review.
+    - Check ``generated-replacement.csv``. When exact replacement value is required,
+      for example to fit to fixed length column in database,
+      add word with replacement to ``word-guard-value.csv``.
+    - In case there are CSV Column Templates configured, check ``csv-dictionary-candidate.csv``
+      and copy required confidential words to ``word-guard-value.csv``.
+    - Check ``file-error.csv``, for example some files can be added to ``file-ignore.csv``
+- Run replace (direction - replace, mode - inplace) according to collected configuration.
+  Add JVM parameter ``-Dwrite.inplace=true``
+- If Restore (Unmask) is planned later, copy ``replace-instruction.csv``
+  from ``restore-instruction-last.csv`` or ``restore-instruction-cumulative.csv`` as appropriate.
 
 ## Restore (Unmask)
 
-# Report File
+- Take ``replace-instruction.csv`` from previous Replace (Mask) operation.
+  If it is not available, Replace (Mask) can be re-done to produce that report.
+- Run Restore (Unmask) (direction - restore, mode - inplace)
+  Add JVM parameters ``-Dscan.direction=restore -Dwrite.inplace=true``
+- Check results and restart restore if required.
+    - Check ``restore-generated-replacement.csv`` for missing or ambiguous replacements.
+      Provide correct value in ``replace-instruction.csv``
+    - If some replacement needs to be skipped, it can be marked as **Allow=true**
+      in ``replace-instruction.csv``
+
+# Report / Instruction File
 
 Report file is a crucial part of the process.
 Report contains occurrences of guarded words, one per line, in CSV format.
@@ -66,8 +90,8 @@ Report file is stored as ``replace-report.csv``. Example report row:
 ## Instruction Matching
 
 Replace instruction file uses same format as report file.
-Use ``restore-instruction-lines.csv`` for particular false-positives with exact context and file match
-or ``restore-instruction.csv`` for common false-positives with wider context and file path matching.
+Use ``replace-instruction-lines.csv`` for particular false-positives with exact context and file match
+or ``replace-instruction.csv`` for common false-positives with wider context and file path matching.
 These files can be prepared manually or by copying lines from report file ``replace-report.csv`` with **Allow** column
 filling.
 
@@ -113,7 +137,7 @@ Sample project can be used as base for your custom scan project. It also can se 
 
 - Edit [scan-project/sample/config/scan-application.yml](../scan-project/sample/config/scan-application.yml)
 
-```
+```yaml
 read:
   # !!! Project folder to be scanned - provide actual value !!!
   folder: "/work/project/scanned-sample"
@@ -133,16 +157,16 @@ scan-project                             # folder to collect scan configuration 
       word-guard-pattern.csv             # patterns to find, optionally with replacement template
       replace-instruction.csv            # common false-positives, utilizing context matching, file path patterns
       replace-instruction-lines.csv      # particular false-positives, copy-pasted from report
-      restore-instruction.csv
+      restore-instruction.csv            # instructions to restore (replace back) from masked to unmasked values
     target                               # scan output files, ignored by Git and scan                        
       replace-report.csv                 # replace report file to manually identify false-positives
-      csv-dictionary-candidate.csv
-      file-error.csv
+      csv-dictionary-candidate.csv       # non-replaced values from CSV "dictionary" column
+      file-error.csv                     # file level messages and errors
       generated-replacement.csv          # can be adjusted and copied to dictionary
-      restore-instruction-cumulative.csv #
-      restore-instruction-last.csv       #
-      restore-report.csv                 #
-      restore-generated-replacement.csv  #
+      restore-instruction-cumulative.csv # report from replace for future restore combined with config/restore-instruction.csv
+      restore-instruction-last.csv       # report from replace for future restore, last run only 
+      restore-report.csv                 # restore report file to identify restore issues 
+      restore-generated-replacement.csv  # missing and ambigious restore values
       preview                            # folder for replaced files to check during review phase
       logs                               # scan logs
       
@@ -179,18 +203,19 @@ Run with passing scan project location as JVM parameter
 - Spring Boot Jar
     - ``java -jar code-egress.jar -Dscan.project=scan-project/myproject``
 
-Processing Modes
+### Processing direction
 
-- Review mode. Code is not changed, changed files are placed to ``preview`` folder. This is default mode, or add JVM
-  option ``-Dwrite.inplace=false``
-- Cleanup mode. Code is replaced inplace. Add JVM option ``-Dwrite.inplace=true``
-
-Report file is generated in both modes.
-
-Processing direction
 - Replace. Mask confidential data. This is default mode, or add JVM
   option ``-Dscan.direction=replace``
 - Restore. Unmask confidential data. Add JVM option ``-Dscan.direction=restore``
+
+### Processing Mode
+
+- Review mode. Code is not changed, changed files are placed to ``preview`` folder. This is default mode, or add JVM
+  option ``-Dwrite.inplace=false``
+- Inplace mode. Code is replaced inplace. Add JVM option ``-Dwrite.inplace=true``
+
+Report files are generated in both modes.
 
 # File Processing
 
@@ -198,8 +223,9 @@ Processing direction
   by [Ant-like wildcards](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/util/AntPathMatcher.html)
     - Folder match ends with '/', e.g. ``**/target/``
     - File match does not end with '/', e.g. ``**/*.class``
-- File level messages and errors are dumped to console and log when scan is completed
 - Add ignored files to ``file-ignore.csv``
+- Check ``file-error.csv`` for file level messages and errors,
+  like guarded words in file name or encoding issues.
 
 # Text Processing
 
@@ -224,24 +250,33 @@ CSV files can be configured to fill columns by template, even if no guarded word
 
 ## CSV Column Template configuration per file type
 
-```
+```yaml
 csv:
   enabled: true
   files:
-# CSV configuration per file type
-# File path is matched with wildcards
-    - filename: *accounts.csv
-# Columns to replace with fill patterns
-      columns:
+    # CSV configuration per file type. File path is matched with wildcards
+    - filename: "*accounts.csv"
+      columns: # Columns to fill by template
         "name": "n{id}"       # fill by pattern
         "fullName": "fn{id}"  # {id} meas value from "id" column in same row 
         "email": ""           # clean
         "phone": "NA"         # fill with static value
-      dictionary:
+      dictionary: # Columns to replace as plain text or to add to csv-dictionary-candidate.csv otherwise 
         "mnemonic": "mn{id}"
 ```
 
-Values in not mentioned columns are processed and reported according to usual Text matching
+Column types:
+
+- **columns:** are filled by template.
+  Content of column filled by template is not restorable.
+  Report contains only one line per CSV file, as described below.
+  For example, for configuration **"name": "n{id}"** column **"name"** will contain
+  character **"n"** concatenated with content of column **"id"** in same row.
+- **dictionary:** columns are processed and reported according to usual Text matching per cell.
+  Additionally, not replaced values are added to ``csv-dictionary-candidate.csv``.
+- Values in not mentioned as **columns:** or **dictionary:**
+  are processed and reported according to usual Text matching.
+  Context in report contains column name as prefix.
 
 ## CSV Column Template in Report File
 
@@ -257,7 +292,7 @@ Report File combines results from CSV and Text processing
 
 **Given** config
 
-```
+```yaml
 word:
   guard:
     values:
@@ -295,10 +330,7 @@ To compare ZIP files manually, for example, use **Ctrl+D** in Intellij IDEA.
 
 # Tips and Tricks
 
+- Use cases - see integration tests in **com.bt.code.egress.process** package.
 - You can split review task in smaller parts by adding filters by module,
   e.g. ``**/mymodule/`` or by file type, e.g. ``**/*.csv``.
   Report format and file names in it will be the same, so later those additional filters can be removed.
-- You can restore original values in project code for some degree.
-  Create other scan project with ``word-guard-value.csv`` content
-  from ``generated-replacement.csv`` having "from" and "to" CSV columns swapped.
-  Of course, this approach has some limitations, for example CSV content will not be restored.
