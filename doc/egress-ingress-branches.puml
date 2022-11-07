@@ -1,0 +1,51 @@
+@startuml
+box "Internal" #LightGreen
+participant Ingress_N as "Ingress N"
+participant Main
+participant Egress
+participant Egress_N as "Egress N"
+end box
+
+box "External" #LightPink
+participant ExtEgress
+participant ExtMain
+end box
+
+activate Main
+activate ExtMain
+
+Main -> Egress: Initial
+activate Egress
+
+Main -> Main: Internal\nDevelopment
+
+Main -> Egress_N: Take internal development after Egress N-1
+activate Egress_N
+Main -> Ingress_N: From same revision
+activate Ingress_N
+Egress -> Egress_N: Merge base to compare -\nprevious Egress N-1
+note right
+  Conflicts:
+  - Modified - take from Ingress N, will be re-masked
+  - Removed - check manually
+end note
+Egress_N -> Egress_N: Mask
+note right
+  Can be reviewed as separate commit
+end note
+Egress_N -> Egress: PR: diff with Egress N-1
+destroy Egress_N
+Egress --> ExtEgress: Manual Files Replace
+activate ExtEgress
+
+ExtEgress -> ExtMain
+Main -> Main: Internal\nDevelopment
+ExtMain -> ExtMain: External Development
+
+ExtMain --> Ingress_N: Replace changed files (Manually, by patch, Git multi-origin, etc.)
+Ingress_N -> Ingress_N: Unmask
+Ingress_N <- Main: Resolve conflicts\nwith latest changes\nCheck build
+Ingress_N -> Main: PR: dif with Main
+destroy Ingress_N
+
+@enduml

@@ -62,7 +62,7 @@ public class LineReplacer {
         }
     }
 
-    public List<MatchParam> getMatchParams(String line, LineLocation lineLocation) {
+    public List<MatchParam> getMatchParams(String line, LineLocation lineLocation, ContextGenerator contextGenerator) {
         List<WordMatch> matches = lineMatcher.getMatches(line);
         if (matches.isEmpty()) {
             return Collections.emptyList();
@@ -70,18 +70,20 @@ public class LineReplacer {
 
         List<MatchParam> matchParams = matches.stream()
                 // instructionMatcher can return null
-                .map(rm -> new MatchParam(rm, instructionMatcher.getInstruction(rm.getLineToken(), lineLocation), null))
+                .map(wm -> new MatchParam(wm,
+                        instructionMatcher.getInstruction(lineLocation, wm.getLineToken(), contextGenerator.getContext(wm.getLineToken())),
+                        null))
                 .collect(Collectors.toList());
 
         markConflicts(matchParams);
         return matchParams;
     }
 
-    public String replace(String line, LineLocation lineLocation) {
+    public String replace(String line, LineLocation lineLocation, ContextGenerator contextGenerator) {
         if (line.length() == 0) {
             return line;
         }
-        List<MatchParam> matchParams = getMatchParams(line, lineLocation);
+        List<MatchParam> matchParams = getMatchParams(line, lineLocation, contextGenerator);
         if (matchParams.isEmpty()) {
             return line;
         }
@@ -130,16 +132,16 @@ public class LineReplacer {
                 Stats.wordReplaced();
             }
 
-            textMatchedListener.onMatched(new TextMatched(lineLocation, lineToken, matchParam.getAllowed(), replacement,
-                    comment));
+            textMatchedListener.onMatched(new TextMatched(lineLocation, lineToken, matchParam.getAllowed(),
+                    contextGenerator.getContext(lineToken), replacement, comment));
         }
         String replacedLine = processed == null ? line : processed + line.substring(processedPos);
         if (restoreInstructionDraftListener != null) {
             for (BackMatch backMatch : backMatches) {
                 WordMatch wordMatch = backMatch.getWordMatch();
-                restoreInstructionDraftListener.onMatched(new TextMatched(lineLocation,
-                        new LineToken(replacedLine, backMatch.getStartPos(), backMatch.getEndPos()),
-                        null, wordMatch.getLineToken().getWord(), "Restore " + wordMatch.getReason()));
+                LineToken replacedToken = new LineToken(replacedLine, backMatch.getStartPos(), backMatch.getEndPos());
+                restoreInstructionDraftListener.onMatched(new TextMatched(lineLocation, replacedToken, null,
+                        contextGenerator.getContext(replacedToken), wordMatch.getLineToken().getWord(), "Restore " + wordMatch.getReason()));
             }
         }
         Stats.wordsMatched(matchParams.size());

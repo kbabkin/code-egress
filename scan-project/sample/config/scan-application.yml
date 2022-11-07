@@ -82,7 +82,9 @@ replace:
         - "127.0.0.1"
         - "0.0.0.0"
       patterns: # ignore pattern is searched, use ^..$ to match complete word
-        - "@mail.local$"
+        - "w\\d{3,}"
+        - "\\w[\\w.-]+\\.domain\\.local"
+        - "\\w[\\w.-]+@mail\\.local"
       valueFiles: [ ]
       patternFiles: [ ]
 

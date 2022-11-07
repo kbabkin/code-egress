@@ -9,6 +9,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+/**
+ * Find word in configured set.
+ * Used to match line tokenized into whole words, or to match ignored words.
+ * Optimization: lookup in hash map whole words from tokenized line.
+ */
 @RequiredArgsConstructor
 public class BasicWordMatcher implements WordMatcher {
     private final Map<String, String> values;

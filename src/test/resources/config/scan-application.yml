@@ -23,8 +23,8 @@ replace:
         "acme": "testCompany"
         "sample": ""
         "123": ""
-        "Dummy": "D"
-        "Yuppi": "Y"
+        "Dummy": "Ddd"
+        "Yuppi": "Yyy"
         "[guard@acme.com]": "replaced@mail.local"
       patterns:
         ## Mappings of "from" and "to" pattern replacements. "To" can contain template variables, can be empty.
@@ -45,7 +45,9 @@ replace:
         - "0.0.0.0"
         - "ignore@acme.com"
       patterns: # ignore pattern is searched, use ^..$ to match complete word
-        - "@mail.local$"
+        - "w\\d{3,}"
+        - "\\w[\\w.-]+\\.domain\\.local"
+        - "\\w[\\w.-]+@mail\\.local"
       valueFiles: [ ]
       patternFiles: [ ]
 
@@ -89,16 +91,17 @@ restore:
   instruction:
     files:
       - ${scan.config}/restore-instruction.csv
-      - ${replace.restoreInstructionDraft} # results from previous replace, overridden after rerun, cleaned by maven, so manual changes in it can be lost
+#      - ${replace.restoreInstructionCumulative} # results from previous replace, overridden after rerun, cleaned by maven, so manual changes in it can be lost
 
 csv:
   enabled: true
   files:
     - filename: "*LegalEntity*.csv"
+      dictionary:
+        "mnemonic": "mn{legalEntityId}"
       columns:
         "name": "n{legalEntityId}"
         "fullName": "fn{legalEntityId}"
-        "mnemonic": "mn{legalEntityId}"
         "cisNumber": "{legalEntityId}"
         "pbgoLegalEntityId": "{legalEntityId}"
         "cportLegalEntityId": "{legalEntityId}"
@@ -107,26 +110,31 @@ csv:
         "crdsLeId": "{legalEntityId}"
         "cftcCpty": "cpt{legalEntityId}"
     - filename: "*EM_User*.csv"
+      dictionary:
+        "userName": "un{userId}"
       columns:
         "lastName": "ln{userId}"
         "firstName": "fn{userId}"
         "userName": "un{userId}"
         "emailAddress": ""
     - filename: "*Institution*.csv"
+      dictionary:
+        "mnemonic": "mn{institutionId}"
       columns:
         "name": "n{institutionId}"
         "fullName": "fn{institutionId}"
-        "mnemonic": "mn{institutionId}"
         "cisNumber": "{institutionId}"
     - filename: "*Book*.csv"
+      dictionary:
+        "mnemonic": "mn{bookId}"
       columns:
         "name": "n{bookId}"
         "fullName": "fn{bookId}"
-        "mnemonic": "mn{bookId}"
         "adpAcctNum": "ac{bookId}"
     - filename: test.csv
+      dictionary:
+        "longName": "ln{id}"
       columns:
         "shortName": "sn{id}"
-        "longName": "ln{id}"
         "email": ""
         "address": "N/A"

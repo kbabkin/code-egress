@@ -38,6 +38,11 @@ public class LineGuardIgnoreMatcher implements LineMatcher {
         return fromConfigs(new Config.MatchingMap.ValuesAndPatternsMap(guardValues, guardVnP.getPatterns()), ignoreVnP);
     }
 
+    /**
+     * Optimizations:
+     * - for whole words: tokenize line, check tokens are in hash map.
+     * - for non-whole words: group words by prefix, check group if line contain its prefix.
+     */
     private static LineGuardIgnoreMatcher fromConfigs(Config.MatchingMap.ValuesAndPatternsMap guardVnP,
                                                       Config.MatchingSet.ValuesAndPatternsSet ignoreVnP) {
         Set<String> wholeWords = guardVnP.getValues().keySet().stream()

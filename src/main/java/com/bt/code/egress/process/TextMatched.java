@@ -9,6 +9,7 @@ public class TextMatched {
     LineLocation lineLocation;
     LineToken lineToken;
     Boolean allowed;
+    String context;
     String replacement;
     String comment;
 
@@ -24,6 +25,7 @@ public class TextMatched {
                 ":" + lineToken.getStartPos() +
                 "-" + lineToken.getEndPos() +
                 ", allowed=" + allowed +
+                ", context=" + context +
                 ", replacement='" + replacement + '\'' +
                 ", comment='" + comment + '\'' +
                 '}';

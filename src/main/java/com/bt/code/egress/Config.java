@@ -96,6 +96,7 @@ public class Config {
         File restoreInstructionCumulative;
         File restoreInstructionLast;
         File generatedReplacement;
+        File fileError;
     }
 
     public Config.DirectionConfig getDirectionConfig() {
@@ -214,6 +215,7 @@ public class Config {
     @Data
     public static class CsvFileConfig {
         String filename;
+        Map<String, String> dictionary = new LinkedHashMap<>();
         Map<String, String> columns = new LinkedHashMap<>();
 
         public boolean matches(String filenameToMatch) {
@@ -227,6 +229,7 @@ public class Config {
         char delim = ',';
         char quote = '"';
         Character commentMarker = null;
+        File dictionaryCandidate;
         List<CsvFileConfig> files = new ArrayList<>();
 
         public CsvFileConfig get(String filename) {

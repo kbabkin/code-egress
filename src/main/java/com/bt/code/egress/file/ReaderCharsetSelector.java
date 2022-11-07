@@ -1,7 +1,7 @@
 package com.bt.code.egress.file;
 
 import com.bt.code.egress.process.FileLocation;
-import com.bt.code.egress.report.Stats;
+import com.bt.code.egress.report.FileErrors;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedReader;
@@ -25,7 +25,7 @@ public class ReaderCharsetSelector {
             try (BufferedReader bufferedReader = LocalFiles.newBufferedReader(file.getFilePath(), charset)) {
                 return function.apply(bufferedReader);
             } catch (MalformedInputException e) {
-                Stats.addError(file.toReportedPath(), String.format("%s encoding incompatible", charset));
+                FileErrors.addError(file.toReportedPath(), String.format("%s encoding incompatible", charset));
                 if (additionalCharsetIterator.hasNext()) {
                     newCharset = additionalCharsetIterator.next();
                     log.error("{} encoding incompatible, trying {}: {}", charset, newCharset, file);

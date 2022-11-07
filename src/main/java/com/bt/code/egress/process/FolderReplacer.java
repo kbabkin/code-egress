@@ -5,6 +5,7 @@ import com.bt.code.egress.file.ReaderCharsetSelector;
 import com.bt.code.egress.read.FilePathMatcher;
 import com.bt.code.egress.read.LineLocation;
 import com.bt.code.egress.read.LineToken;
+import com.bt.code.egress.report.FileErrors;
 import com.bt.code.egress.report.Stats;
 import com.bt.code.egress.write.FileCompleted;
 import com.bt.code.egress.write.ZipCompleted;
@@ -26,6 +27,7 @@ public class FolderReplacer {
     private final FilePathMatcher filePathMatcher;
     private final FilePathMatcher allowFilePathMatcher;
     private final LineReplacer lineReplacer;
+    private final ContextGenerator contextGenerator;
     private final TextMatched.Listener textMatchedListener;
     private final FileCompleted.Listener fileCompletedListener;
     private final ZipCompleted.Listener zipCompletedListener;
@@ -47,9 +49,10 @@ public class FolderReplacer {
                 LineLocation lineLocation = new LineLocation(reportedPath, 0);
                 if (LocalFiles.isDirectory(file.getFilePath())) {
                     if (filePathMatcher.match(name + "/")) {
-                        List<LineReplacer.MatchParam> fileNameMatches = lineReplacer.getMatchParams(relativeFile.getFilename(), lineLocation);
+                        List<LineReplacer.MatchParam> fileNameMatches = lineReplacer.getMatchParams(
+                                relativeFile.getFilename(), lineLocation, contextGenerator);
                         for (LineReplacer.MatchParam fileNameMatch : fileNameMatches) {
-                            Stats.addError(reportedPath, "Guarded word: " + fileNameMatch.getWordMatch().getReason());
+                            FileErrors.addError(reportedPath, "Guarded word: " + fileNameMatch.getWordMatch().getReason());
                         }
                         replace(file, rootFolder, submitter);
                     } else {
@@ -67,13 +70,14 @@ public class FolderReplacer {
                     log.info("Ignore file due to previous failure: {}", relativeFile);
                     Stats.fileFailed();
                     textMatchedListener.onMatched(new TextMatched(lineLocation,
-                            new LineToken(""), true, "", "Ignore file due to previous failure"));
+                            new LineToken(""), true, "", "", "Ignore file due to previous failure"));
                     return;
                 }
 
-                List<LineReplacer.MatchParam> fileNameMatches = lineReplacer.getMatchParams(relativeFile.getFilename(), lineLocation);
+                List<LineReplacer.MatchParam> fileNameMatches = lineReplacer.getMatchParams(
+                        relativeFile.getFilename(), lineLocation, contextGenerator);
                 for (LineReplacer.MatchParam fileNameMatch : fileNameMatches) {
-                    Stats.addError(reportedPath, "Guarded word: " + fileNameMatch.getWordMatch().getReason());
+                    FileErrors.addError(reportedPath, "Guarded word: " + fileNameMatch.getWordMatch().getReason());
                 }
 
                 if (isZipFile(file.getFilePath())) {
@@ -91,10 +95,10 @@ public class FolderReplacer {
                             fileCompletedListener.onFileCompleted(fileCompleted);
                         } catch (Exception e) {
                             log.error("Failed to process file {}", relativeFile, e);
-                            Stats.addError(reportedPath, "Failed to process file: " + e);
+                            FileErrors.addError(reportedPath, "Failed to process file: " + e);
                             Stats.fileFailed();
                             textMatchedListener.onMatched(new TextMatched(lineLocation,
-                                    new LineToken(""), null, "", "FAILED to process file " + relativeFile));
+                                    new LineToken(""), null, "", "", "FAILED to process file " + relativeFile));
                         }
                     });
                 }
