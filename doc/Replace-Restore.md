@@ -326,10 +326,12 @@ csv:
 
 Files inside ZIP archives are scanned and replaced in same manner as plain files.
 
-To compare ZIP files manually, for example, use **Ctrl+D** in Intellij IDEA.
+In Intellij IDEA use **Ctrl+D** to compare ZIP files, 
+or plugin to view ZIP content: https://plugins.jetbrains.com/plugin/9491-archive-browser
 
 # Tips and Tricks
 
+- If you want to explore implementation, start with class [LineReplacer](../src/main/java/com/bt/code/egress/process/LineReplacer.java)
 - Use cases - see integration tests in **com.bt.code.egress.process** package.
 - You can split review task in smaller parts by adding filters by module,
   e.g. ``**/mymodule/`` or by file type, e.g. ``**/*.csv``.

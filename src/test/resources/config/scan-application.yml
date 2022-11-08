@@ -102,14 +102,9 @@ csv:
       columns:
         "name": "n{legalEntityId}"
         "fullName": "fn{legalEntityId}"
-        "cisNumber": "{legalEntityId}"
-        "pbgoLegalEntityId": "{legalEntityId}"
-        "cportLegalEntityId": "{legalEntityId}"
-        "subAccountNm": "sa{legalEntityId}"
-        #Don't mask w8TaxForm
-        "crdsLeId": "{legalEntityId}"
-        "cftcCpty": "cpt{legalEntityId}"
-    - filename: "*EM_User*.csv"
+        "extNumber": "{legalEntityId}"
+        #counterparty - non-included
+    - filename: "*User*.csv"
       dictionary:
         "userName": "un{userId}"
       columns:
@@ -123,14 +118,14 @@ csv:
       columns:
         "name": "n{institutionId}"
         "fullName": "fn{institutionId}"
-        "cisNumber": "{institutionId}"
+        "extNumber": "{institutionId}"
     - filename: "*Book*.csv"
       dictionary:
         "mnemonic": "mn{bookId}"
       columns:
         "name": "n{bookId}"
         "fullName": "fn{bookId}"
-        "adpAcctNum": "ac{bookId}"
+        "extAccountNum": "ac{bookId}"
     - filename: test.csv
       dictionary:
         "longName": "ln{id}"

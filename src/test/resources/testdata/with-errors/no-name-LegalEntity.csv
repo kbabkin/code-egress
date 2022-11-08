@@ -1,4 +1,4 @@
-legalEntityId,no-name,fullName,mnemonic,cisNumber,pbgoLegalEntityId,cportLegalEntityId,subAccountNm,w8TaxForm,crdsLeId,cftcCpty
-1001,LE_DUMMY001,"Dummy , Inc 001",LE1001,2221001,pbgo1001,cport1001,ADBGER,Y,FAN,"200 A"
-1002,LE_DUMMY002,"Dummy , Inc 002",w1002,2221002,pbgo1002,cport1002,WERUYI,ACME,RID,"300 B"
-2001,LE_YUPPI001,"Yuppi, Inc 001",21,2222001,pbgo2001,cport2001,KJHQOR,N,KEY,"400 C"
+legalEntityId,no-name,fullName,mnemonic,extNumber,counterparty
+1001,LE_DUMMY001,"Dummy , Inc 001",LE1001,2221001,200 A
+1002,LE_DUMMY002,"Dummy , Inc 002",w1002,2221002,300 B
+2001,LE_YUPPI001,"Yuppi, Inc 001",21,2222001,400 C
