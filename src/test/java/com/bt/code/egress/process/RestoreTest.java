@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -29,24 +30,25 @@ public class RestoreTest extends ProcessTestBase {
 
     @Test
     void newOccurrences() {
-        String sampleText = "Company: ACME" +
-                "\nFull name: Acme Corp";
+        List<String> sampleText = ImmutableList.of(
+                "Company: ACME",
+                "Full name: Acme Corp");
         fileSystem.write(sampleTextPath, sampleText);
         runScan();
-        String replacedText = fileSystem.read(sampleTextPath);
-        assertThat(replacedText).isEqualTo(
-                "Company: w281027120\n" +
-                        "Full name: w281027120 Corp");
+        List<String> replacedText = fileSystem.readAllLines(sampleTextPath);
+        assertThat(replacedText).isEqualTo(ImmutableList.of(
+                "Company: w281027120",
+                "Full name: w281027120 Corp"));
 
         // restore
         config.getScan().setDirection("restore");
-        fileSystem.write(sampleTextPath, replacedText +
-                "\nNew usage: w281027120" +
-                "\nNon-existing: w0123456789");
+        fileSystem.write(sampleTextPath, ImmutableList.<String>builder().addAll(replacedText)
+                .add("New usage: w281027120")
+                .add("Non-existing: w0123456789").build());
         runScan();
-        assertThat(fileSystem.read(sampleTextPath)).isEqualTo(sampleText +
-                "\nNew usage: <<AMBIGUOUS:w281027120:ACME|Acme>>" +
-                "\nNon-existing: <<NO_RESTORE:w0123456789>>");
+        assertThat(fileSystem.readAllLines(sampleTextPath)).isEqualTo(ImmutableList.<String>builder().addAll(sampleText)
+                .add("New usage: <<AMBIGUOUS:w281027120:ACME|Acme>>")
+                .add("Non-existing: <<NO_RESTORE:w0123456789>>").build());
         assertThat(fileSystem.readAllLines(config.getRestore().getGeneratedReplacement().toPath())).isEqualTo(ImmutableList.of(
                 "w0123456789,<<NO_RESTORE:w0123456789>>",
                 "w281027120,<<AMBIGUOUS:w281027120:ACME|Acme>>"));
@@ -66,13 +68,13 @@ public class RestoreTest extends ProcessTestBase {
                 "Allow,Text,Context,File,Line,Replacement,Comment",
                 ",w281027120,Company: w281027120,text/sample-text.txt,1,ACME,Restore Value acme"));
 
-        String addedText = "\nFull name: Acme Corp";
-        fileSystem.write(sampleTextPath, replacedText + addedText);
+        String addedText = "Full name: Acme Corp";
+        fileSystem.write(sampleTextPath, ImmutableList.of(replacedText, addedText));
 
         runScan();
-        assertThat(fileSystem.read(sampleTextPath)).isEqualTo(
-                "Company: w281027120\n" +
-                        "Full name: w281027120 Corp");
+        assertThat(fileSystem.readAllLines(sampleTextPath)).isEqualTo(ImmutableList.of(
+                "Company: w281027120",
+                "Full name: w281027120 Corp"));
         assertThat(fileSystem.readAllLines(replaceConfig.getRestoreInstructionLast().toPath())).isEqualTo(ImmutableList.of(
                 "Allow,Text,Context,File,Line,Replacement,Comment",
                 ",w281027120,Full name: w281027120 Corp,text/sample-text.txt,2,Acme,Restore Value acme"));
@@ -86,6 +88,6 @@ public class RestoreTest extends ProcessTestBase {
         // restore
         config.getScan().setDirection("restore");
         runScan();
-        assertThat(fileSystem.read(sampleTextPath)).isEqualTo(sampleText + addedText);
+        assertThat(fileSystem.readAllLines(sampleTextPath)).isEqualTo(ImmutableList.of(sampleText, addedText));
     }
 }
