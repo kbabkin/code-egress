@@ -30,15 +30,15 @@ public class InstructionMatcher {
         Map<String, List<Report.ReportLine>> rowsByWord = instructionFiles.stream()
                 .map(file -> reportHelper.read(file.toPath()))
                 .flatMap(Collection::stream)
-//                .filter(r -> Objects.nonNull(r.getAllow()))
                 .map(rl -> new Report.ReportLine(rl.getAllow(), rl.getText().toLowerCase(), rl.getContext().toLowerCase(),
                         rl.getFile(), rl.getLine(), rl.getReplacement(), rl.getComment()))
                 .distinct()
                 .collect(Collectors.groupingBy(Report.ReportLine::getText));
+
         // longer context has higher priority
-        Comparator<String> longerFirst = Comparator.nullsLast(Comparator.comparingInt(String::length).reversed());
-        rowsByWord.values().forEach(list -> list.sort(Comparator.comparing(Report.ReportLine::getContext, longerFirst)
-                .thenComparing(Report.ReportLine::getFile, longerFirst)));
+        rowsByWord.values().forEach(list -> list.sort(Comparator.comparing(Report.ReportLine::getContext, ReportHelper.CONTEXT_COMPARATOR)
+                .thenComparing(Report.ReportLine::getFile, ReportHelper.CONTEXT_COMPARATOR)
+                .thenComparing(Report.ReportLine::getAllow, ReportHelper.ALLOW_COMPARATOR)));
 
         Map<String, Set<String>> replacementsByWord = instructionFiles.stream()
                 .map(file -> reportHelper.read(file.toPath()))
@@ -51,9 +51,8 @@ public class InstructionMatcher {
     }
 
 
-    public Report.ReportLine getInstruction(LineToken lineToken, LineLocation lineLocation) {
+    public Report.ReportLine getInstruction(LineLocation lineLocation, LineToken lineToken, String wordContext) {
         String word = lineToken.getWordLowerCase();
-        String wordContext = lineToken.getContext(reportHelper);
         List<Report.ReportLine> reportLines = rowsByText.get(word);
         if (reportLines == null || reportLines.isEmpty()) {
             return null;

@@ -2,6 +2,7 @@ package com.bt.code.egress.write;
 
 import com.bt.code.egress.file.KeepEolFiles;
 import com.bt.code.egress.file.LocalFiles;
+import com.bt.code.egress.report.FileErrors;
 import com.bt.code.egress.report.Stats;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -74,7 +75,7 @@ public class FolderWriter implements FileCompleted.Listener, ZipCompleted.Listen
             log.info("Moved zip {} to {}", newZipAbsolutePath, zipCompleted.getSourceZipAbsolutePath());
 
         } catch (IOException ie) {
-            Stats.addError(zipCompleted.getSourceZipAbsolutePath().toString(),
+            FileErrors.addError(zipCompleted.getSourceZipAbsolutePath().toString(),
                     String.format("Cannot replace %s due to %s",
                             zipCompleted.getSourceZipAbsolutePath(),
                             ie));
@@ -129,7 +130,7 @@ public class FolderWriter implements FileCompleted.Listener, ZipCompleted.Listen
                 Stats.zipFileChanged();
             } catch (IOException e) {
                 log.error("Could not copy {} to {}", sourceZipPath, newZipPath, e);
-                Stats.addError(newZipPath.toString(), String.format("Could not copy %s to %s", sourceZipPath, newZipPath));
+                FileErrors.addError(newZipPath.toString(), String.format("Could not copy %s to %s", sourceZipPath, newZipPath));
             }
         }
     }

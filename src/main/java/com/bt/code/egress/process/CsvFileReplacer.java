@@ -1,11 +1,13 @@
 package com.bt.code.egress.process;
 
 import com.bt.code.egress.Config;
+import com.bt.code.egress.file.LocalFiles;
 import com.bt.code.egress.read.CsvFormatDetector;
 import com.bt.code.egress.read.InstructionMatcher;
 import com.bt.code.egress.read.LineLocation;
+import com.bt.code.egress.read.LineMatcher;
 import com.bt.code.egress.read.LineToken;
-import com.bt.code.egress.read.WordMatch;
+import com.bt.code.egress.report.FileErrors;
 import com.bt.code.egress.report.Report;
 import com.bt.code.egress.report.ReportHelper;
 import com.bt.code.egress.report.Stats;
@@ -20,15 +22,20 @@ import org.apache.commons.csv.QuoteMode;
 import org.apache.commons.text.StringSubstitutor;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -36,22 +43,25 @@ public class CsvFileReplacer implements FileReplacer {
     private final TextFileReplacer textFileReplacer;
     private final LineReplacer lineReplacer;
     private final InstructionMatcher instructionMatcher;
-    private final ReportHelper reportHelper;
+    private final ContextGenerator contextGenerator;
     private final TextMatched.Listener textMatchedListener;
     private final Config.CsvReplacementConfig csvConfig;
+    private final boolean skipTemplateReplacement;
     private final CSVFormat writeCsvFormat;
     private final CSVFormat readCsvFormat;
     private final CsvFormatDetector csvFormatDetector;
+    private final Map<String, String> dictionaryCandidates = new ConcurrentHashMap<>();
 
     public CsvFileReplacer(TextFileReplacer textFileReplacer, LineReplacer lineReplacer, InstructionMatcher instructionMatcher,
                            ReportHelper reportHelper, TextMatched.Listener textMatchedListener,
-                           Config.CsvReplacementConfig csvConfig) {
+                           Config.CsvReplacementConfig csvConfig, boolean skipTemplateReplacement) {
         this.textFileReplacer = textFileReplacer;
         this.lineReplacer = lineReplacer;
         this.instructionMatcher = instructionMatcher;
-        this.reportHelper = reportHelper;
+        this.contextGenerator = reportHelper.getContextGenerator();
         this.textMatchedListener = textMatchedListener;
         this.csvConfig = csvConfig;
+        this.skipTemplateReplacement = skipTemplateReplacement;
         this.writeCsvFormat = CSVFormat.DEFAULT
                 .withDelimiter(csvConfig.getDelim())
                 .withQuote(csvConfig.getQuote())
@@ -100,20 +110,16 @@ public class CsvFileReplacer implements FileReplacer {
                     .filter(n -> !headerMap.containsKey(n))
                     .collect(Collectors.toSet());
             if (!missingColumns.isEmpty()) {
-                Stats.addError(file, "Missing CSV columns: " + missingColumns);
+                FileErrors.addError(file, "Missing CSV columns: " + missingColumns);
             }
         }
 
         boolean isGuarded(int index) {
-            return guarded[index];
+            return index < guarded.length && guarded[index];
         }
 
         String getTemplate(int index) {
             return templates[index];
-        }
-
-        int size() {
-            return guarded.length;
         }
 
         StringSubstitutor getStringSubstitutor(List<String> values) {
@@ -121,12 +127,29 @@ public class CsvFileReplacer implements FileReplacer {
                     .map(mapping::get)
                     .map(values::get)
                     .orElseGet(() -> {
-                        Stats.addError(file, "Missing CSV columns: " + name);
+                        FileErrors.addError(file, "Missing CSV columns: " + name);
                         return "_UNRESOLVED_" + name + "_";
                     }),
                     "{", "}", '$');
         }
 
+    }
+
+    static class ColumnContextGenerators {
+        private final ContextGenerator defaultContextGenerator;
+        private final List<ContextGenerator> contextGenerators;
+
+        ColumnContextGenerators(ContextGenerator defaultContextGenerator, Map<String, Integer> headerMap) {
+            this.defaultContextGenerator = defaultContextGenerator;
+            // later used by column index
+            this.contextGenerators = headerMap.keySet().stream()
+                    .map(header -> (ContextGenerator) (lt -> header + ":" + defaultContextGenerator.getContext(lt)))
+                    .collect(Collectors.toList());
+        }
+
+        ContextGenerator getContextGenerator(int index) {
+            return index < contextGenerators.size() ? contextGenerators.get(index) : defaultContextGenerator;
+        }
     }
 
     public FileCompleted replaceCsv(FileLocation file, BufferedReader bufferedReader, Config.CsvFileConfig csvFileConfig) throws IOException {
@@ -135,17 +158,27 @@ public class CsvFileReplacer implements FileReplacer {
         log.info("Process file as CSV: {}", reportedPath);
 
         List<List<String>> originalRecords = new ArrayList<>();
-        List<LineReplacer.MatchParam> firstRunMatches = new ArrayList<>();
+        List<String> firstRunMatches = new ArrayList<>();
         CSVParser recordsParser = readCsvFormat.parse(bufferedReader);
         Map<String, Integer> headerMap = recordsParser.getHeaderMap();
-        GuardedColumns guardedColumns = new GuardedColumns(reportedPath, csvFileConfig.getColumns(), headerMap);
+        GuardedColumns dictionaryColumns = new GuardedColumns(reportedPath, csvFileConfig.getDictionary(), headerMap);
+        GuardedColumns templateColumns = new GuardedColumns(reportedPath,
+                skipTemplateReplacement ? Collections.emptyMap() : csvFileConfig.getColumns(), headerMap);
+        ColumnContextGenerators columnContextGenerators = new ColumnContextGenerators(contextGenerator, headerMap);
         for (CSVRecord record : recordsParser) {
             originalRecords.add(Lists.newArrayList(record.iterator()));
             LineLocation lineLocation = new LineLocation(reportedPath, (int) record.getRecordNumber());
-            for (int i = 0; i < guardedColumns.size() && i < record.size(); i++) {
-                if (guardedColumns.isGuarded(i)) {
+            for (int i = 0; i < record.size(); i++) {
+//                if (dictionaryColumns.isGuarded(i) || templateColumns.isGuarded(i)) {
+                if (templateColumns.isGuarded(i)) {
                     String cell = record.get(i);
-                    firstRunMatches.addAll(lineReplacer.getMatchParams(cell, lineLocation));
+                    ContextGenerator columnContextGenerator = columnContextGenerators.getContextGenerator(i);
+                    List<LineReplacer.MatchParam> matchParams = lineReplacer.getMatchParams(cell, lineLocation, columnContextGenerator);
+                    matchParams.stream()
+                            .filter(matchParam -> !Boolean.TRUE.equals(matchParam.getAllowed()))
+                            .filter(matchParam -> matchParam.getConflict() == null)
+                            .forEach(matchParam -> firstRunMatches.add(
+                                    columnContextGenerator.getContext(matchParam.getWordMatch().getLineToken())));
                 }
             }
         }
@@ -158,12 +191,26 @@ public class CsvFileReplacer implements FileReplacer {
             lineNum++; // 0 is header
             List<String> replacedRecord = new ArrayList<>(originalRecord.size());
             LineLocation lineLocation = new LineLocation(reportedPath, lineNum);
-            StringSubstitutor csvSubstitutor = guardedColumns.getStringSubstitutor(originalRecord);
-            for (int i = 0; i < guardedColumns.size() && i < originalRecord.size(); i++) {
+            StringSubstitutor templateSubstitutor = templateColumns.getStringSubstitutor(originalRecord);
+            for (int i = 0; i < originalRecord.size(); i++) {
                 String cell = originalRecord.get(i);
-                String replace = guardedColumns.isGuarded(i)
-                        ? (Boolean.TRUE.equals(allowed) ? cell : csvSubstitutor.replace(guardedColumns.getTemplate(i)))
-                        : lineReplacer.replace(cell, lineLocation);
+                String replace;
+                if (templateColumns.isGuarded(i)) {
+                    String mashed = templateSubstitutor.replace(templateColumns.getTemplate(i));
+                    if (Boolean.TRUE.equals(allowed)) {
+                        replace = cell;
+                        if (!cell.equals(mashed)) {
+                            dictionaryCandidates.put(cell.trim().toLowerCase(), "template");
+                        }
+                    } else {
+                        replace = mashed;
+                    }
+                } else {
+                    replace = lineReplacer.replace(cell, lineLocation, columnContextGenerators.getContextGenerator(i));
+                    if (dictionaryColumns.isGuarded(i) && cell.equals(replace)) {
+                        dictionaryCandidates.put(cell.trim().toLowerCase(), "dictionary");
+                    }
+                }
                 replacedRecord.add(replace);
             }
             replacedRecords.add(replacedRecord);
@@ -175,18 +222,18 @@ public class CsvFileReplacer implements FileReplacer {
                 write(headers, replacedRecords, file));
     }
 
-    private Boolean reportAndGetAllowed(String reportedPath, Config.CsvFileConfig csvFileConfig, List<LineReplacer.MatchParam> firstRunMatches) {
+    private Boolean reportAndGetAllowed(String reportedPath, Config.CsvFileConfig csvFileConfig, List<String> firstRunMatches) {
         String joinedWord = "csv:" + csvFileConfig.getFilename() + ":" + String.join(",", csvFileConfig.getColumns().keySet());
         String joinedReplacement = String.join(",", csvFileConfig.getColumns().values());
         String joinedContext = getJoinedContext(firstRunMatches);
-        LineToken joinedLineToken = new JoinedLineToken(joinedWord.toLowerCase(), joinedContext);
+        LineToken joinedLineToken = new LineToken(joinedWord.toLowerCase(), 0, joinedWord.length());
         LineLocation joinedLineLocation = new LineLocation(reportedPath, 0);
 
-        Report.ReportLine instruction = instructionMatcher.getInstruction(joinedLineToken, joinedLineLocation);
+        Report.ReportLine instruction = instructionMatcher.getInstruction(joinedLineLocation, joinedLineToken, joinedContext);
         Boolean allowed = instruction != null ? instruction.getAllow() : null;
 
-        textMatchedListener.onMatched(new TextMatched(joinedLineLocation, joinedLineToken, allowed, joinedReplacement,
-                "CSV Column Template"));
+        textMatchedListener.onMatched(new TextMatched(joinedLineLocation, joinedLineToken, allowed,
+                joinedContext, joinedReplacement, "CSV Column Template"));
         return allowed;
     }
 
@@ -219,14 +266,7 @@ public class CsvFileReplacer implements FileReplacer {
         }
     }
 
-    public String getJoinedContext(List<LineReplacer.MatchParam> firstRunMatches) {
-        if (!firstRunMatches.isEmpty()) {
-            firstRunMatches = firstRunMatches.stream()
-                    .filter(matchParam -> !Boolean.TRUE.equals(matchParam.getAllowed()))
-                    .filter(matchParam -> matchParam.getConflict() == null)
-                    .collect(Collectors.toList());
-        }
-
+    public String getJoinedContext(List<String> firstRunMatches) {
         if (firstRunMatches.isEmpty()) {
             return "No guarded words found";
         }
@@ -234,36 +274,48 @@ public class CsvFileReplacer implements FileReplacer {
         int limit = 2;
         String collect = firstRunMatches.stream()
                 .limit(limit)
-                .map(LineReplacer.MatchParam::getWordMatch)
-                .map(WordMatch::getLineToken)
-                .map(lt -> lt.getContext(reportHelper))
                 .collect(Collectors.joining(", "));
         return firstRunMatches.size() > limit ? collect + " and " + (firstRunMatches.size() - limit) + " others" : collect;
     }
 
-    static class JoinedLineToken extends LineToken {
-        private final String word;
-        private final String context;
-
-        public JoinedLineToken(String word, String context) {
-            super("");
-            this.word = word.toLowerCase();
-            this.context = context;
+    public void saveDictionaryCandidates(Path dictionaryCandidatePath, LineMatcher restoreLineMatcher) {
+        if (dictionaryCandidates.isEmpty()) {
+            log.info("No CVS Dictionary Candidates");
+            return;
         }
 
-        @Override
-        public String getWordLowerCase() {
-            return word;
+        log.info("Writing CVS Dictionary Candidates to {}", dictionaryCandidatePath);
+        CSVFormat format = CSVFormat.DEFAULT.withHeader("Text", "Replacement", "Scope", "Comment");
+        try (BufferedWriter writer = LocalFiles.newBufferedWriter(dictionaryCandidatePath)) {
+            try (CSVPrinter printer = new CSVPrinter(writer, format)) {
+                dictionaryCandidates.entrySet().stream()
+                        .map(entry -> {
+                            String text = entry.getKey();
+                            return new String[]{text,
+                                    // leave second column empty if report line copy-pasted to word-guard-value.csv
+                                    // where it is used as is replacement template
+                                    null,
+                                    // is it from template or dictionary column
+                                    entry.getValue(),
+                                    // tricky: restore config is used during replace
+                                    !restoreLineMatcher.getMatches(text).isEmpty() ? "Ignore: restorable"
+                                            : text.length() < 3 ? "Ignore: too short" : null};
+                        })
+                        .sorted(Comparator.comparing((String[] r) -> r[3], Comparator.comparingInt(s -> s == null ? 1 : 0))
+                                .thenComparing((String[] r) -> r[0], Comparator.comparingInt(s -> s == null || s.length() < 3 ? 0 : 1))
+                                .thenComparing((String[] r) -> r[2])
+                                .thenComparing((String[] r) -> r[0]))
+                        .forEach(e -> {
+                            try {
+                                printer.printRecord((Object[]) e);
+                            } catch (IOException ex) {
+                                throw new RuntimeException(ex);
+                            }
+                        });
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to write CVS Dictionary Candidate to " + dictionaryCandidatePath, e);
         }
-
-        @Override
-        public String getWord() {
-            return word;
-        }
-
-        @Override
-        public String getContext(ReportHelper reportHelper) {
-            return context;
-        }
+        Stats.increment("Words CSV Dictionary Candidate", dictionaryCandidates.size());
     }
 }

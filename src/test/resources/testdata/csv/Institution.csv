@@ -1,4 +1,4 @@
-institutionId,name,fullName,mnemonic,cisNumber
+institutionId,name,fullName,mnemonic,extNumber
 5551001,INST_DUMMY001,"Dummy , Inc 001 institution",I1001,7771001
 5551002,INST_DUMMY002,"Dummy , Inc 002 institution",I1002,7771002
 5552001,INST_YUPPI001,"Yuppi, Inc 001 institution",I2001,7772001

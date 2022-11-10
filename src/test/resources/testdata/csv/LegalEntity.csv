@@ -1,4 +1,4 @@
-no-legalEntityId,name,fullName,mnemonic,extNumber,counterparty
+legalEntityId,name,fullName,mnemonic,extNumber,counterparty
 1001,LE_DUMMY001,"Dummy , Inc 001",LE1001,2221001,200 A
 1002,LE_DUMMY002,"Dummy , Inc 002",LE1002,2221002,300 B
 2001,LE_YUPPI001,"Yuppi, Inc 001",LE2001,2222001,400 C

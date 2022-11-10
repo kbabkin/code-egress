@@ -1,4 +1,4 @@
-"bookId","name","fullName","mnemonic","adpAcctNum"
+"bookId","name","fullName","mnemonic","extAccountNum"
 "8881001","BOOK_DUMMY001","Dummy , Inc 001 book","B1001","9991001"
 "8881002","BOOK_DUMMY002","Dummy , Inc 002 book","B1002",null
 "8882001","BOOK_YUPPI001","Yuppi, Inc 001 book","B2001","9992001"
