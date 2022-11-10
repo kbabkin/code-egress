@@ -1,0 +1,21 @@
+# Does not have executable flag, used by xgress.sh by source (.) command.
+
+# Common variables
+xgress_jar=/work/project/code-egress/target/code-egress-0.2.0-SNAPSHOT.jar
+
+internal_repo=repos/bitbucket
+external_repo=repos/github
+
+internal_develop_branch=develop
+internal_egress_durable_branch=xgress/develop-egress
+
+external_egress_durable_branch=xgress/develop-egress
+
+# Run-specific variables
+internal_egress_start_tag=xgress-develop-egress-start-2022-11-11
+internal_egress_branch=xgress/develop-egress-2022-11-11
+external_egress_branch=xgress/develop-egress-2022-11-11
+
+external_ingress_start=${external_egress_branch}
+external_ingress_tag=xgress-develop-ingress-2022-11-15
+internal_ingress_branch=xgress/develop-ingress-2022-11-15
